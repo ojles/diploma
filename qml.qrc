@@ -1,0 +1,17 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>Triangle.qml</file>
+        <file>LvivMap.qml</file>
+        <file>RegionOfStudy.qml</file>
+        <file>Omega.qml</file>
+        <file>MapRegion.qml</file>
+        <file>Vector.js</file>
+        <file>BoundaryCondition.qml</file>
+        <file>BetaVectorField.qml</file>
+        <file>MapVector.qml</file>
+        <file>SidePanel.qml</file>
+        <file>shader/Vertex.shader</file>
+        <file>shader/Fragment.shader</file>
+    </qresource>
+</RCC>
