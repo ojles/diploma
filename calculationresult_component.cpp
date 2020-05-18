@@ -194,11 +194,6 @@ void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& soluti
     double xScaler = 2 / (topRight.x - bottomLeft.x);
     double yScaler = 2 / (topRight.y - bottomLeft.y);
     double colorScaler = 1 / (topRight.value - bottomLeft.value);
-    if (yScaler > xScaler) {
-        yScaler = xScaler;
-    } else {
-        xScaler = yScaler;
-    }
 
     vertices->clear();
     colors->clear();

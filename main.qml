@@ -75,6 +75,40 @@ ApplicationWindow {
 
         onCenterChanged: {
             betaVectorField.redraw();
+
+            // TODO: cache topLeft and bottomRight
+            // FIXME: when ROS is cropped because of a big zoom
+            if (sidePanel.readyToCalculate) {
+                let topLeft = {
+                    lat: regionOfStudy.path[0].latitude,
+                    lon: regionOfStudy.path[0].longitude
+                };
+                let bottomRight = {
+                    lat: regionOfStudy.path[0].latitude,
+                    lon: regionOfStudy.path[0].longitude
+                };
+                for (let i = 1; i < regionOfStudy.pathLength(); i++) {
+                    if (topLeft.lat < regionOfStudy.path[i].latitude) {
+                        topLeft.lat = regionOfStudy.path[i].latitude;
+                    }
+                    if (topLeft.lon > regionOfStudy.path[i].longitude) {
+                        topLeft.lon = regionOfStudy.path[i].longitude;
+                    }
+                    if (bottomRight.lat > regionOfStudy.path[i].latitude) {
+                        bottomRight.lat = regionOfStudy.path[i].latitude;
+                    }
+                    if (bottomRight.lon < regionOfStudy.path[i].longitude) {
+                        bottomRight.lon = regionOfStudy.path[i].longitude;
+                    }
+                }
+                const topLeftC = QtPositioning.coordinate(topLeft.lat, topLeft.lon);
+                const bottomRightC = QtPositioning.coordinate(bottomRight.lat, bottomRight.lon);
+                const topLeftP = map.fromCoordinate(topLeftC);
+                const bottomRightP = map.fromCoordinate(bottomRightC);
+                calcMapItem.coordinate = topLeftC;
+                calcMapItem.sourceItem.width = bottomRightP.x - topLeftP.x;
+                calcMapItem.sourceItem.height = bottomRightP.y - topLeftP.y;
+            }
         }
 
         RegionOfStudy {
@@ -108,8 +142,8 @@ ApplicationWindow {
         }
 
         MapQuickItem {
-            coordinate: map.lvivCoordinates
-            zoomLevel: 12
+            id: calcMapItem
+            zoomLevel: map.zoomLevel
             sourceItem: Rectangle {
                 width: 500
                 height: 500
