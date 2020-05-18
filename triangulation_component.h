@@ -6,8 +6,7 @@
 #include <QGeoCoordinate>
 #include <triangulate.h>
 
-class TriangulationComponent : public QObject
-{
+class TriangulationComponent : public QObject {
     Q_OBJECT
     Q_PROPERTY(QObject *polyline READ polyline WRITE setPolyline NOTIFY polylineChanged)
     Q_PROPERTY(QString switches READ switches WRITE setSwitches NOTIFY switchesChanged)

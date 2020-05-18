@@ -1,7 +1,6 @@
 #include "triangle_gradient_renderer.h"
 
-TriangleGradientRenderer::TriangleGradientRenderer(QVector<QVector2D>* vertices, QVector<QVector4D>* colors)
-{
+TriangleGradientRenderer::TriangleGradientRenderer(QVector<QVector2D>* vertices, QVector<QVector4D>* colors) {
     initializeOpenGLFunctions();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -16,8 +15,7 @@ TriangleGradientRenderer::TriangleGradientRenderer(QVector<QVector2D>* vertices,
     colorAttribute = program.attributeLocation("custom_color");
 }
 
-void TriangleGradientRenderer::render()
-{
+void TriangleGradientRenderer::render() {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -34,8 +32,7 @@ void TriangleGradientRenderer::render()
     update();
 }
 
-QOpenGLFramebufferObject* TriangleGradientRenderer::createFramebufferObject(const QSize &size)
-{
+QOpenGLFramebufferObject* TriangleGradientRenderer::createFramebufferObject(const QSize &size) {
     QOpenGLFramebufferObjectFormat format;
     return new QOpenGLFramebufferObject(size, format);
 }

@@ -9,8 +9,7 @@
 
 #include "integral_calculation.h"
 
-class CalculationResultComponent : public QQuickFramebufferObject
-{
+class CalculationResultComponent : public QQuickFramebufferObject {
     Q_OBJECT
     Q_PROPERTY(QString triangulationSwitches READ triangulationSwitches WRITE setTriangulationSwitches NOTIFY triangulationSwitchesChanged)
     Q_PROPERTY(QObject* regionOfStudy READ regionOfStudy WRITE setRegionOfStudy NOTIFY regionOfStudyChanged)

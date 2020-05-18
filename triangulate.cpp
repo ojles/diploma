@@ -1,11 +1,9 @@
 #include "triangulate.h"
 
-Triangulate::Triangulate()
-{
+Triangulate::Triangulate() {
 }
 
-triangulateio Triangulate::triangulate(char* switches, vector<TriangulatePoint> &points)
-{
+triangulateio Triangulate::triangulate(char* switches, vector<TriangulatePoint> &points) {
     triangulateio in, out;
 
     in.numberofpoints = (int) points.size();
@@ -44,8 +42,7 @@ triangulateio Triangulate::triangulate(char* switches, vector<TriangulatePoint> 
     return out;
 }
 
-vector<TriangulatePoint> Triangulate::triangulateSimplified(char* switches, vector<TriangulatePoint> &points)
-{
+vector<TriangulatePoint> Triangulate::triangulateSimplified(char* switches, vector<TriangulatePoint> &points) {
     triangulateio out = triangulate(switches, points);
 
     vector<TriangulatePoint> resultPoints;

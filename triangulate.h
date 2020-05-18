@@ -7,19 +7,16 @@
 
 using std::vector;
 
-extern "C"
-{
+extern "C" {
     void triangulate(char *triswitches, triangulateio *in, triangulateio *out, triangulateio *vorout);
 }
 
-struct TriangulatePoint
-{
+struct TriangulatePoint {
     double x;
     double y;
 };
 
-class Triangulate
-{
+class Triangulate {
 public:
     Triangulate();
 

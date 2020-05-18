@@ -6,8 +6,7 @@
 #include <QtGui/qopenglshaderprogram.h>
 #include <QtGui/qopenglfunctions.h>
 
-class TriangleGradientRenderer : public QQuickFramebufferObject::Renderer, protected QOpenGLFunctions
-{
+class TriangleGradientRenderer : public QQuickFramebufferObject::Renderer, protected QOpenGLFunctions {
 public:
     TriangleGradientRenderer(QVector<QVector2D>* vertices, QVector<QVector4D>* colors);
 

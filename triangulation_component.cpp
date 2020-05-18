@@ -1,33 +1,27 @@
 #include "triangulation_component.h"
 
-TriangulationComponent::TriangulationComponent(QObject *parent) : QObject(parent)
-{
+TriangulationComponent::TriangulationComponent(QObject *parent) : QObject(parent) {
 }
 
-QObject* TriangulationComponent::polyline()
-{
+QObject* TriangulationComponent::polyline() {
     return _polyline;
 }
 
-QString TriangulationComponent::switches()
-{
+QString TriangulationComponent::switches() {
     return _switches;
 }
 
-void TriangulationComponent::setPolyline(QObject *polyline)
-{
+void TriangulationComponent::setPolyline(QObject *polyline) {
     this->_polyline = polyline;
     emit polylineChanged();
 }
 
-void TriangulationComponent::setSwitches(QString &switches)
-{
+void TriangulationComponent::setSwitches(QString &switches) {
     this->_switches = switches;
     emit switchesChanged();
 }
 
-void TriangulationComponent::update()
-{
+void TriangulationComponent::update() {
     if (_polyline == nullptr) {
         return;
     }
@@ -64,21 +58,17 @@ void TriangulationComponent::update()
     emit TriangulationComponent::triangulationFinished();
 }
 
-void TriangulationComponent::doTriangulate()
-{
-    if (this->_polyline == nullptr)
-    {
+void TriangulationComponent::doTriangulate() {
+    if (this->_polyline == nullptr) {
         return;
     }
     update();
 }
 
-QGeoCoordinate TriangulationComponent::vertexAt(int index)
-{
+QGeoCoordinate TriangulationComponent::vertexAt(int index) {
     return this->vertices.at(index);
 }
 
-int TriangulationComponent::verticesCount()
-{
+int TriangulationComponent::verticesCount() {
     return this->vertices.size();
 }

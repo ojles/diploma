@@ -13,100 +13,82 @@ CalculationResultComponent::CalculationResultComponent()
     : vertices(new QVector<QVector2D>()),
       colors(new QVector<QVector4D>()),
       _regionOfStudy(nullptr),
-      _boundaryCondition(nullptr)
-{
+      _boundaryCondition(nullptr) {
 }
 
-CalculationResultComponent::~CalculationResultComponent()
-{
+CalculationResultComponent::~CalculationResultComponent() {
     delete vertices;
     delete colors;
 }
 
-QQuickFramebufferObject::Renderer* CalculationResultComponent::createRenderer() const
-{
+QQuickFramebufferObject::Renderer* CalculationResultComponent::createRenderer() const {
     return new TriangleGradientRenderer(vertices, colors);
 }
 
-QString CalculationResultComponent::triangulationSwitches()
-{
+QString CalculationResultComponent::triangulationSwitches() {
     return _triangulationSwitches;
 }
 
-QObject* CalculationResultComponent::regionOfStudy()
-{
+QObject* CalculationResultComponent::regionOfStudy() {
     return _regionOfStudy;
 }
 
-QObject* CalculationResultComponent::boundaryCondition()
-{
+QObject* CalculationResultComponent::boundaryCondition() {
     return _boundaryCondition;
 }
 
-bool CalculationResultComponent::calculateBoundaryCondition()
-{
+bool CalculationResultComponent::calculateBoundaryCondition() {
     return _calculateBoundaryContition;
 }
 
-double CalculationResultComponent::mu()
-{
+double CalculationResultComponent::mu() {
     return _mu;
 }
 
-double CalculationResultComponent::sigma()
-{
+double CalculationResultComponent::sigma() {
     return _sigma;
 }
 
-double CalculationResultComponent::alpha()
-{
+double CalculationResultComponent::alpha() {
     return _alpha;
 }
 
-void CalculationResultComponent::setTriangulationSwitches(QString triangulationSwitches)
-{
+void CalculationResultComponent::setTriangulationSwitches(QString triangulationSwitches) {
     _triangulationSwitches = triangulationSwitches;
     emit triangulationSwitchesChanged();
 }
 
-void CalculationResultComponent::setRegionOfStudy(QObject* regionOfStudy)
-{
+void CalculationResultComponent::setRegionOfStudy(QObject* regionOfStudy) {
     _regionOfStudy = regionOfStudy;
     emit regionOfStudyChanged();
 }
 
-void CalculationResultComponent::setBoundaryCondition(QObject* boundaryCondition)
-{
+void CalculationResultComponent::setBoundaryCondition(QObject* boundaryCondition) {
     _boundaryCondition = boundaryCondition;
     emit boundaryConditionChanged();
 }
 
-void CalculationResultComponent::setCalculateBoundaryCondition(bool calculateBoundaryCondition)
-{
+void CalculationResultComponent::setCalculateBoundaryCondition(bool calculateBoundaryCondition) {
     _calculateBoundaryContition = calculateBoundaryCondition;
     emit calculateBoundaryConditionChanged();
 }
 
-void CalculationResultComponent::setMu(double mu)
-{
+void CalculationResultComponent::setMu(double mu) {
     _mu = mu;
     emit muChanged();
 }
 
-void CalculationResultComponent::setSigma(double sigma)
-{
+void CalculationResultComponent::setSigma(double sigma) {
     _sigma = sigma;
     emit sigmaChanged();
 }
 
-void CalculationResultComponent::setAlpha(double alpha)
-{
+void CalculationResultComponent::setAlpha(double alpha) {
     _alpha = alpha;
     emit alphaChanged();
 }
 
-vector<intcalc::Vector2d> retrieveROSPoints(QObject* ros)
-{
+vector<intcalc::Vector2d> retrieveROSPoints(QObject* ros) {
     if (ros == nullptr) {
         return vector<intcalc::Vector2d>();
     }
@@ -134,8 +116,7 @@ vector<intcalc::Vector2d> retrieveROSPoints(QObject* ros)
     return points;
 }
 
-vector<intcalc::Vector2d> retrieveBoundaryCondition(QObject* boundaryCondition)
-{
+vector<intcalc::Vector2d> retrieveBoundaryCondition(QObject* boundaryCondition) {
     if (boundaryCondition == nullptr) {
         return vector<intcalc::Vector2d>();
     }
@@ -162,8 +143,7 @@ vector<intcalc::Vector2d> retrieveBoundaryCondition(QObject* boundaryCondition)
     return points;
 }
 
-void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& solution)
-{
+void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& solution) {
     if (solution.triangles.size() <= 0) {
         return;
     }
@@ -206,8 +186,7 @@ void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& soluti
     }
 }
 
-void CalculationResultComponent::doCalculate()
-{
+void CalculationResultComponent::doCalculate() {
     vector<intcalc::Vector2d> inputPoints = retrieveROSPoints(_regionOfStudy);
     vector<intcalc::Vector2d> boundaryCondition = retrieveBoundaryCondition(_boundaryCondition);
 
@@ -220,8 +199,7 @@ void CalculationResultComponent::doCalculate()
 
     intcalc::FEMCalculator femCalculator;
     femCalculator.setPoints(&inputPoints);
-    if (_calculateBoundaryContition)
-    {
+    if (_calculateBoundaryContition) {
         femCalculator.setBoundaryCondition(&boundaryCondition);
     }
     femCalculator.setTriangulationSwitches(_triangulationSwitches);
