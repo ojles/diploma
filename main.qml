@@ -103,8 +103,9 @@ ApplicationWindow {
                 }
                 const topLeftC = QtPositioning.coordinate(topLeft.lat, topLeft.lon);
                 const bottomRightC = QtPositioning.coordinate(bottomRight.lat, bottomRight.lon);
-                const topLeftP = map.fromCoordinate(topLeftC);
-                const bottomRightP = map.fromCoordinate(bottomRightC);
+                const topLeftP = map.fromCoordinate(topLeftC, false);
+                const bottomRightP = map.fromCoordinate(bottomRightC, false);
+                // TODO: maybe change center only once
                 calcMapItem.coordinate = topLeftC;
                 calcMapItem.sourceItem.width = bottomRightP.x - topLeftP.x;
                 calcMapItem.sourceItem.height = bottomRightP.y - topLeftP.y;
