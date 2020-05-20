@@ -4,9 +4,6 @@ import QtQuick.Layouts 1.12
 import QtPositioning 5.12
 import QtLocation 5.12
 
-import lnu.oles.Triangulation 1.0
-import lnu.oles.CalculationResult 1.0
-
 ApplicationWindow {
     visible: true
     width: 640
@@ -32,33 +29,6 @@ ApplicationWindow {
         }
     }
 
-    // TODO: return all vertices not individually
-    Triangulation {
-        readonly property var triangles: []
-
-        id: triangulation
-        polyline: regionOfStudy
-        switches: sidePanel.triangulationSwitches
-        onTriangulationFinished: {
-            clearFromMap();
-            var triangle = Qt.createComponent('Triangle.qml')
-            for (var i = 0; i < verticesCount(); i += 3) {
-                var triangleObject = triangle.createObject(map);
-                triangleObject.addCoordinate(vertexAt(i));
-                triangleObject.addCoordinate(vertexAt(i + 1));
-                triangleObject.addCoordinate(vertexAt(i + 2));
-                map.addMapItem(triangleObject);
-                triangles.push(triangleObject);
-            }
-        }
-
-        function clearFromMap() {
-            while (triangles.length !== 0) {
-                map.removeMapItem(triangles.pop());
-            }
-        }
-    }
-
     LvivMap {
         readonly property var omegaPolylineComponent: Qt.createComponent('Omega.qml')
         readonly property var omegaPolylines: []
@@ -75,41 +45,7 @@ ApplicationWindow {
 
         onCenterChanged: {
             betaVectorField.redraw();
-
-            // TODO: cache topLeft and bottomRight
-            // FIXME: when ROS is cropped because of a big zoom
-            if (sidePanel.readyToCalculate) {
-                let topLeft = {
-                    lat: regionOfStudy.path[0].latitude,
-                    lon: regionOfStudy.path[0].longitude
-                };
-                let bottomRight = {
-                    lat: regionOfStudy.path[0].latitude,
-                    lon: regionOfStudy.path[0].longitude
-                };
-                for (let i = 1; i < regionOfStudy.pathLength(); i++) {
-                    if (topLeft.lat < regionOfStudy.path[i].latitude) {
-                        topLeft.lat = regionOfStudy.path[i].latitude;
-                    }
-                    if (topLeft.lon > regionOfStudy.path[i].longitude) {
-                        topLeft.lon = regionOfStudy.path[i].longitude;
-                    }
-                    if (bottomRight.lat > regionOfStudy.path[i].latitude) {
-                        bottomRight.lat = regionOfStudy.path[i].latitude;
-                    }
-                    if (bottomRight.lon < regionOfStudy.path[i].longitude) {
-                        bottomRight.lon = regionOfStudy.path[i].longitude;
-                    }
-                }
-                const topLeftC = QtPositioning.coordinate(topLeft.lat, topLeft.lon);
-                const bottomRightC = QtPositioning.coordinate(bottomRight.lat, bottomRight.lon);
-                const topLeftP = map.fromCoordinate(topLeftC, false);
-                const bottomRightP = map.fromCoordinate(bottomRightC, false);
-                // TODO: maybe change center only once
-                calcMapItem.coordinate = topLeftC;
-                calcMapItem.sourceItem.width = bottomRightP.x - topLeftP.x;
-                calcMapItem.sourceItem.height = bottomRightP.y - topLeftP.y;
-            }
+            calculationResult.updateDimensions();
         }
 
         RegionOfStudy {
@@ -146,19 +82,16 @@ ApplicationWindow {
             id: calcMapItem
             zoomLevel: map.zoomLevel
             sourceItem: Rectangle {
-                width: 500
-                height: 500
-                border {
-                    width: 1
-                    color: "black"
-                }
                 color: Qt.rgba(0, 0, 0, 0);
-                CalculationResult {
+                CalculationResultWrapper {
                     id: calculationResult
+                    map: map
+                    ros: regionOfStudy
                     anchors.fill: parent
                     regionOfStudy: regionOfStudy
                     boundaryCondition: boundaryCondition
                     triangulationSwitches: sidePanel.triangulationSwitches
+                    showTriangulation: sidePanel.showTriangulation
                     calculateBoundaryCondition: sidePanel.calculateBoundaryCondition
                     mu: sidePanel.mu
                     sigma: sidePanel.sigma
@@ -232,20 +165,19 @@ ApplicationWindow {
 
             regionOfStudy.path = [];
             boundaryCondition.clearFromMap();
-            triangulation.clearFromMap();
             while (omegaPolylines.length !== 0) {
                 removeMapItem(omegaPolylines.pop());
             }
 
             currentPolyline = regionOfStudy;
+            calculationResult.clear();
         }
 
         function triggerCalculation() {
             if (!dataReadyForCalculation) {
                 return;
             }
-            triangulation.doTriangulate();
-            calculationResult.doCalculate();
+            calculationResult.calculate();
         }
     }
 }

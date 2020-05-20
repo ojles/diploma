@@ -41,31 +41,3 @@ triangulateio Triangulate::triangulate(char* switches, vector<TriangulatePoint> 
 
     return out;
 }
-
-vector<TriangulatePoint> Triangulate::triangulateSimplified(char* switches, vector<TriangulatePoint> &points) {
-    triangulateio out = triangulate(switches, points);
-
-    vector<TriangulatePoint> resultPoints;
-    for (int i = 0; i < out.numberoftriangles; i++) {
-        for (int j = 0; j < out.numberofcorners; j++) {
-            int vertexIndex = out.trianglelist[i * out.numberofcorners + j] - 1;
-            TriangulatePoint point;
-            point.y = out.pointlist[vertexIndex * 2 + 1];
-            point.x = out.pointlist[vertexIndex * 2];
-            resultPoints.push_back(point);
-        }
-    }
-
-    free(out.pointlist);
-    free(out.pointattributelist);
-    free(out.pointmarkerlist);
-    free(out.trianglelist);
-    free(out.triangleattributelist);
-    free(out.neighborlist);
-    free(out.segmentlist);
-    free(out.segmentmarkerlist);
-    free(out.edgelist);
-    free(out.edgemarkerlist);
-
-    return resultPoints;
-}

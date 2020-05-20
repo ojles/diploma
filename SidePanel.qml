@@ -9,6 +9,7 @@ Rectangle {
     property var onCalculate;
 
     property bool showBetaVectorField: showBetaVectorFieldCheckbox.checked;
+    property bool showTriangulation: showTriangulationCheckbox.checked;
     property bool calculateBoundaryCondition: calculateBoundaryConditionCheckBox.checked;
     property string triangulationSwitches: triangulationSwitchesTextField.text
     property string mu: muTextField.text
@@ -24,6 +25,10 @@ Rectangle {
                 id: showBetaVectorFieldCheckbox
                 text: qsTr("Show beta vector field")
             }
+            CheckBox {
+                id: showTriangulationCheckbox
+                text: qsTr("Show triangulation")
+            }
             TextField {
                 id: triangulationSwitchesTextField
                 text: "q30a.00005"
@@ -34,10 +39,10 @@ Rectangle {
             CheckBox {
                 id: calculateBoundaryConditionCheckBox
                 Layout.topMargin: 15
-                text: "Enable boundary condition"
+                text: qsTr("Enable boundary condition")
             }
             Text {
-                text: "Mu:"
+                text: qsTr("Mu:")
                 Layout.leftMargin: 6
             }
             TextField {
@@ -47,7 +52,7 @@ Rectangle {
                 validator: DoubleValidator {}
             }
             Text {
-                text: "Sigma:"
+                text: qsTr("Sigma:")
                 Layout.leftMargin: 6
             }
             TextField {
@@ -57,7 +62,7 @@ Rectangle {
                 validator: DoubleValidator {}
             }
             Text {
-                text: "Alpha:"
+                text: qsTr("Alpha:")
                 Layout.leftMargin: 6
             }
             TextField {
@@ -67,7 +72,7 @@ Rectangle {
                 validator: DoubleValidator {}
             }
             Button {
-                text: "Restart"
+                text: qsTr("Restart")
                 Layout.leftMargin: 6
                 Layout.topMargin: 15
                 Layout.fillWidth: true
@@ -76,7 +81,7 @@ Rectangle {
                 }
             }
             Button {
-                text: "Calculate"
+                text: qsTr("Calculate")
                 enabled: readyToCalculate
                 Layout.leftMargin: 6
                 Layout.fillWidth: true

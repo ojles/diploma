@@ -141,7 +141,8 @@ namespace intcalc {
     };
 
     struct CalcSolution {
-        vector<Point2DValue> triangles;
+        vector<Point2DValue> vertices;
+        vector<int> triangleIndices;
     };
 
     class FEMCalculator {

@@ -12,6 +12,9 @@ using std::cerr;
 CalculationResultComponent::CalculationResultComponent()
     : vertices(new QVector<QVector2D>()),
       colors(new QVector<QVector4D>()),
+      indices(new QVector<unsigned int>()),
+      dataChanged(new bool(false)),
+      _showTriangulation(new bool(false)),
       _regionOfStudy(nullptr),
       _boundaryCondition(nullptr) {
 }
@@ -22,11 +25,15 @@ CalculationResultComponent::~CalculationResultComponent() {
 }
 
 QQuickFramebufferObject::Renderer* CalculationResultComponent::createRenderer() const {
-    return new TriangleGradientRenderer(vertices, colors);
+    return new TriangleGradientRenderer(vertices, colors, indices, _showTriangulation, dataChanged);
 }
 
 QString CalculationResultComponent::triangulationSwitches() {
     return _triangulationSwitches;
+}
+
+bool CalculationResultComponent::showTriangulation() {
+    return *_showTriangulation;
 }
 
 QObject* CalculationResultComponent::regionOfStudy() {
@@ -53,9 +60,18 @@ double CalculationResultComponent::alpha() {
     return _alpha;
 }
 
+bool CalculationResultComponent::hasData() {
+    return _hasData;
+}
+
 void CalculationResultComponent::setTriangulationSwitches(QString triangulationSwitches) {
     _triangulationSwitches = triangulationSwitches;
     emit triangulationSwitchesChanged();
+}
+
+void CalculationResultComponent::setShowTriangulation(bool showTriangulation) {
+    *_showTriangulation = showTriangulation;
+    emit showTriangulationChanged();
 }
 
 void CalculationResultComponent::setRegionOfStudy(QObject* regionOfStudy) {
@@ -144,30 +160,32 @@ vector<intcalc::Vector2d> retrieveBoundaryCondition(QObject* boundaryCondition) 
 }
 
 void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& solution) {
-    if (solution.triangles.size() <= 0) {
+    if (solution.vertices.size() <= 0) {
         return;
     }
 
-    intcalc::Point2DValue bottomLeft = solution.triangles[0];
-    intcalc::Point2DValue topRight = solution.triangles[0];
-    for (unsigned long i = 0; i < solution.triangles.size(); i++) {
-        if (bottomLeft.x > solution.triangles[i].x) {
-            bottomLeft.x = solution.triangles[i].x;
+    // TODO: instead of goint through all triangulation points
+    // it would be better to go though ROS points
+    intcalc::Point2DValue bottomLeft = solution.vertices[0];
+    intcalc::Point2DValue topRight = solution.vertices[0];
+    for (unsigned long i = 0; i < solution.vertices.size(); i++) {
+        if (bottomLeft.x > solution.vertices[i].x) {
+            bottomLeft.x = solution.vertices[i].x;
         }
-        if (bottomLeft.y > solution.triangles[i].y) {
-            bottomLeft.y = solution.triangles[i].y;
+        if (bottomLeft.y > solution.vertices[i].y) {
+            bottomLeft.y = solution.vertices[i].y;
         }
-        if (topRight.x < solution.triangles[i].x) {
-            topRight.x = solution.triangles[i].x;
+        if (topRight.x < solution.vertices[i].x) {
+            topRight.x = solution.vertices[i].x;
         }
-        if (topRight.y < solution.triangles[i].y) {
-            topRight.y = solution.triangles[i].y;
+        if (topRight.y < solution.vertices[i].y) {
+            topRight.y = solution.vertices[i].y;
         }
-        if (bottomLeft.value > solution.triangles[i].value) {
-            bottomLeft.value = solution.triangles[i].value;
+        if (bottomLeft.value > solution.vertices[i].value) {
+            bottomLeft.value = solution.vertices[i].value;
         }
-        if (topRight.value < solution.triangles[i].value) {
-            topRight.value = solution.triangles[i].value;
+        if (topRight.value < solution.vertices[i].value) {
+            topRight.value = solution.vertices[i].value;
         }
     }
 
@@ -177,13 +195,20 @@ void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& soluti
 
     vertices->clear();
     colors->clear();
-    for (unsigned long i = 0; i < solution.triangles.size(); i++) {
-        float x = static_cast<float>((solution.triangles[i].x - bottomLeft.x) * xScaler - 1);
-        float y = static_cast<float>((solution.triangles[i].y - bottomLeft.y) * yScaler - 1);
-        float color = static_cast<float>((solution.triangles[i].value - bottomLeft.value) * colorScaler);
+    indices->clear();
+    for (unsigned long i = 0; i < solution.vertices.size(); i++) {
+        float x = static_cast<float>((solution.vertices[i].x - bottomLeft.x) * xScaler - 1);
+        float y = static_cast<float>((solution.vertices[i].y - bottomLeft.y) * yScaler - 1);
+        float color = static_cast<float>((solution.vertices[i].value - bottomLeft.value) * colorScaler);
         *vertices << QVector2D(x, y);
-        *colors << QVector4D(color, color, color, 1.0f);
+        *colors << QVector4D(color, color, color, 0.8f);
     }
+    for (unsigned int i = 0; i < solution.triangleIndices.size(); i++) {
+        *indices << solution.triangleIndices[i];
+    }
+    *dataChanged = true;
+    _hasData = true;
+    emit hasDataChanged();
 }
 
 void CalculationResultComponent::doCalculate() {
@@ -222,4 +247,13 @@ void CalculationResultComponent::doCalculate() {
 
     intcalc::CalcSolution solution = femCalculator.solve();
     acceptFEMSolution(solution);
+}
+
+void CalculationResultComponent::clear() {
+    vertices->clear();
+    colors->clear();
+    indices->clear();
+    *dataChanged = true;
+    _hasData = false;
+    emit hasDataChanged();
 }

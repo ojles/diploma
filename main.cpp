@@ -5,7 +5,6 @@
 #include <QtLocation>
 #include <QtPositioning>
 
-#include "triangulation_component.h"
 #include "calculationresult_component.h"
 
 int main(int argc, char *argv[]) {
@@ -13,7 +12,6 @@ int main(int argc, char *argv[]) {
 
     QGuiApplication app(argc, argv);
 
-    qmlRegisterType<TriangulationComponent>("lnu.oles.Triangulation", 1, 0, "Triangulation");
     qmlRegisterType<CalculationResultComponent>("lnu.oles.CalculationResult", 1, 0, "CalculationResult");
 
     QQmlApplicationEngine engine;

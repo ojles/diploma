@@ -19,8 +19,7 @@ SOURCES += \
         integral_calculation_utils.cpp \
         main.cpp \
         triangle_gradient_renderer.cpp \
-        triangulate.cpp \
-        triangulation_component.cpp
+        triangulate.cpp
 
 RESOURCES += qml.qrc
 
@@ -40,8 +39,7 @@ HEADERS += \
     integral_calculation.h \
     integral_calculation_utils.h \
     triangle_gradient_renderer.h \
-    triangulate.h \
-    triangulation_component.h
+    triangulate.h
 
 unix:!macx: LIBS += -L$$PWD/../triangle-lib/ -ltriangle
 

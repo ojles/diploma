@@ -21,8 +21,6 @@ public:
     Triangulate();
 
     triangulateio triangulate(char* switches, vector<TriangulatePoint> &points);
-
-    vector<TriangulatePoint> triangulateSimplified(char* switches, vector<TriangulatePoint> &points);
 };
 
 #endif // TRIANGULATE_H

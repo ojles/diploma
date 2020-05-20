@@ -74,16 +74,16 @@ namespace intcalc {
 
         CalcSolution solution;
         int* idxMap = globalMatrix.getIdxMap();
-        for (int i = 0; i < out.numberoftriangles; i++) {
-            for (int j = 0; j < out.numberofcorners; j++) {
-                int vertexIndex = out.trianglelist[i * out.numberofcorners + j] - 1;
-                int globalIdx = idxMap[vertexIndex];
-                Point2DValue point;
-                point.x = out.pointlist[vertexIndex * 2];
-                point.y = out.pointlist[vertexIndex * 2 + 1];
-                point.value = globalIdx == -1 ? 0 : solutionMatrix(globalIdx, 0);
-                solution.triangles.push_back(point);
-            }
+        for (int i = 0; i < out.numberofpoints; i++) {
+            int globalIdx = idxMap[i];
+            Point2DValue point;
+            point.x = out.pointlist[i * 2];
+            point.y = out.pointlist[i * 2 + 1];
+            point.value = globalIdx == -1 ? 0 : solutionMatrix(globalIdx, 0);
+            solution.vertices.push_back(point);
+        }
+        for (int i = 0; i < out.numberoftriangles * out.numberofcorners; i++) {
+            solution.triangleIndices.push_back(out.trianglelist[i] - 1);
         }
 
         return solution;
