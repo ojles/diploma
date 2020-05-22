@@ -29,6 +29,8 @@ bool intcalc_utils::doIntersect(intcalc::Vector2d p1, intcalc::Vector2d q1, intc
 
     // we need the lines to be colinear
     if (o1 != o2 && o3 != o4) {
+        // FIXME: are you sure that false here?
+        // TODO: need fix
         return false;
     }
 

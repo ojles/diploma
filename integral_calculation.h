@@ -50,19 +50,20 @@ namespace intcalc {
             return _onSegment(a, *this, b);
         }
 
-        static int _orientation(const Vector2d& a, const Vector2d& b, const Vector2d& c) {
-            double orientation = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
-            if (abs(orientation) <= 0.000000001) {
+        static int _orientation(const Vector2d& p, const Vector2d& q, const Vector2d& r) {
+            double val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+
+            // TODO: define this constant somewhere
+            if (abs(val) <= 0.000000001) {
                 return 0;
             }
-            return orientation > 0 ? 1 : 2;
+
+            return (val > 0) ? 1 : 2; // clock or counterclock wise
         }
 
-        static bool _onSegment(const Vector2d& a, const Vector2d& b, const Vector2d& c) {
-            if (b.x <= std::max(a.x, c.x)
-                    && b.x >= std::min(a.x, c.x)
-                    && b.y <= std::max(a.y, c.y)
-                    && b.y >= std::min(a.y, c.y)) {
+        static bool _onSegment(const Vector2d& p, const Vector2d& q, const Vector2d& r) {
+            if (q.x <= std::max(p.x, r.x) && q.x >= std::min(p.x, r.x)
+                    && q.y <= std::max(p.y, r.y) && q.y >= std::min(p.y, r.y)) {
                return true;
             }
             return false;
@@ -76,7 +77,7 @@ namespace intcalc {
 
             // we need the lines to be colinear
             if (o1 != o2 && o3 != o4) {
-                return false;
+                return true;
             }
             // p1, q1 and p2 are colinear and p2 lies on segment p1q1
             if (o1 == 0 && _onSegment(p1, p2, q1)) {
@@ -223,8 +224,8 @@ namespace intcalc {
                     if (Vector2d::_orientation(a, vertex, b) == 0) {
                         return Vector2d::_onSegment(a, vertex, b);
                     }
+                    count++;
                 }
-                count++;
             }
 
             return (count % 2) == 1;

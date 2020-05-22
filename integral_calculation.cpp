@@ -241,7 +241,7 @@ namespace intcalc {
         double** g = M(vertices, triangles);
 
         Eigen::MatrixXd solutionMatrix = solveMatrix(g, vertices, [](const VertexInfo& vertex) ->double {
-            return 0.5;
+            return vertex.isInConservacyArea() ? 1 : 0;
         });
 
         CalcSolution solution;
