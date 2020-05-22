@@ -16,7 +16,7 @@ CalculationResultComponent::CalculationResultComponent()
       dataChanged(new bool(false)),
       _showTriangulation(new bool(false)),
       _regionOfStudy(nullptr),
-      _boundaryCondition(nullptr) {
+      _gamma2(nullptr) {
 }
 
 CalculationResultComponent::~CalculationResultComponent() {
@@ -40,12 +40,16 @@ QObject* CalculationResultComponent::regionOfStudy() {
     return _regionOfStudy;
 }
 
-QObject* CalculationResultComponent::boundaryCondition() {
-    return _boundaryCondition;
+QObject* CalculationResultComponent::gamma2() {
+    return _gamma2;
 }
 
-bool CalculationResultComponent::calculateBoundaryCondition() {
-    return _calculateBoundaryContition;
+QJSValue CalculationResultComponent::conservacyAreas() {
+    return _conservacyAreas;
+}
+
+bool CalculationResultComponent::calculateGamma2() {
+    return _calculateGamma2;
 }
 
 double CalculationResultComponent::mu() {
@@ -79,14 +83,19 @@ void CalculationResultComponent::setRegionOfStudy(QObject* regionOfStudy) {
     emit regionOfStudyChanged();
 }
 
-void CalculationResultComponent::setBoundaryCondition(QObject* boundaryCondition) {
-    _boundaryCondition = boundaryCondition;
-    emit boundaryConditionChanged();
+void CalculationResultComponent::setGamma2(QObject* gamma2) {
+    _gamma2 = gamma2;
+    emit gamma2Changed();
 }
 
-void CalculationResultComponent::setCalculateBoundaryCondition(bool calculateBoundaryCondition) {
-    _calculateBoundaryContition = calculateBoundaryCondition;
-    emit calculateBoundaryConditionChanged();
+void CalculationResultComponent::setConservacyAreas(QJSValue conservacyAreas) {
+    _conservacyAreas = conservacyAreas;
+    emit conservacyAreasChanged();
+}
+
+void CalculationResultComponent::setCalculateGamma2(bool calculateGamma2) {
+    _calculateGamma2 = calculateGamma2;
+    emit calculateGamma2Changed();
 }
 
 void CalculationResultComponent::setMu(double mu) {
@@ -104,59 +113,66 @@ void CalculationResultComponent::setAlpha(double alpha) {
     emit alphaChanged();
 }
 
-QVector<intcalc::Vector2d> retrieveROSPoints(QObject* ros) {
-    if (ros == nullptr) {
-        return QVector<intcalc::Vector2d>();
+QVector<intcalc::Vector2d>* retrievePointsFromMapPolyline(QVariant path, int minPoints) {
+    QList<QVariant> pathElements = path.toList();
+    if (pathElements.size() < minPoints) {
+        throw "Invalid path size";
     }
 
-    QList<QVariant> path = ros->property("path").toList();
-
-    // remove last point that is the same as the first one
-    int pathSize = path.size() - 1;
-    if (pathSize < 3) {
-#ifdef INTCALC_DEBUG
-        cerr << "For some reason pathSize in retrieveROSPoints() is less then 3!" << endl;
-#endif
-        return QVector<intcalc::Vector2d>();
+    QVector<intcalc::Vector2d>* points = new QVector<intcalc::Vector2d>();
+    for (auto pathElement : pathElements) {
+        QGeoCoordinate coordinate = pathElement.value<QGeoCoordinate>();
+        points->push_back(intcalc::Vector2d(coordinate.longitude(), coordinate.latitude()));
     }
-
-    QVector<intcalc::Vector2d> points;
-    for (int i = 0; i < pathSize; i++) {
-        QGeoCoordinate coordinate = path.at(i).value<QGeoCoordinate>();
-        intcalc::Vector2d point;
-        point.x = coordinate.longitude();
-        point.y = coordinate.latitude();
-        points.push_back(point);
-    }
-
     return points;
 }
 
-QVector<intcalc::Vector2d> retrieveBoundaryCondition(QObject* boundaryCondition) {
-    if (boundaryCondition == nullptr) {
-        return QVector<intcalc::Vector2d>();
+void CalculationResultComponent::doCalculate() {
+    QVector<intcalc::Vector2d>* inputPoints = retrievePointsFromMapPolyline(_regionOfStudy->property("path"), 3);
+    QVector<intcalc::Vector2d>* gamma2 = retrievePointsFromMapPolyline(_gamma2->property("path"), 2);
+    QVector<QVector<intcalc::Vector2d>*> conservacyAreas;
+    int areaCount = _conservacyAreas.property("length").toInt() - 1;
+    for (int i = 0; i < areaCount; i++) {
+        QVariant path = _conservacyAreas.property(i).property("path").toVariant();
+        conservacyAreas.push_back(retrievePointsFromMapPolyline(path, 3));
     }
 
-    QList<QVariant> path = boundaryCondition->property("path").toList();
-
-    int pathSize = path.size();
-    if (pathSize < 2) {
-#ifdef INTCALC_DEBUG
-        cerr << "For some reason pathSize in retrieveBoundaryCondition() is less then 2!" << endl;
-#endif
-        return QVector<intcalc::Vector2d>();
+    intcalc::FEMCalculator femCalculator;
+    femCalculator.setRegionOfStudy(inputPoints);
+    if (_calculateGamma2) {
+        femCalculator.setGamma2(gamma2);
     }
+    femCalculator.setConservacyAreas(conservacyAreas);
+    femCalculator.setTriangulationSwitches(_triangulationSwitches);
+    femCalculator.setMu(_mu);
+    femCalculator.setSigma(_sigma);
+    femCalculator.setAlpha(_alpha);
+    femCalculator.setBeta([](const intcalc::Vector2d& vertex) -> intcalc::Vector2d {
+        Q_UNUSED(vertex);
+        intcalc::Vector2d result;
+        result.x = 10;
+        result.y = 0;
+        return result;
+    });
 
-    QVector<intcalc::Vector2d> points;
-    for (int i = 0; i < pathSize; i++) {
-        QGeoCoordinate coordinate = path.at(i).value<QGeoCoordinate>();
-        intcalc::Vector2d point;
-        point.x = coordinate.longitude();
-        point.y = coordinate.latitude();
-        points.push_back(point);
+    intcalc::CalcSolution solution = femCalculator.solve();
+    acceptFEMSolution(solution);
+
+    // clean resources
+    delete inputPoints;
+    delete gamma2;
+    for (auto area : conservacyAreas) {
+        delete area;
     }
+}
 
-    return points;
+void CalculationResultComponent::clear() {
+    vertices->clear();
+    colors->clear();
+    indices->clear();
+    *dataChanged = true;
+    _hasData = false;
+    emit hasDataChanged();
 }
 
 void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& solution) {
@@ -168,7 +184,7 @@ void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& soluti
     // it would be better to go though ROS points
     intcalc::Point2DValue bottomLeft = solution.vertices[0];
     intcalc::Point2DValue topRight = solution.vertices[0];
-    for (unsigned long i = 0; i < solution.vertices.size(); i++) {
+    for (long i = 0; i < solution.vertices.size(); i++) {
         if (bottomLeft.x > solution.vertices[i].x) {
             bottomLeft.x = solution.vertices[i].x;
         }
@@ -196,60 +212,17 @@ void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& soluti
     vertices->clear();
     colors->clear();
     indices->clear();
-    for (unsigned long i = 0; i < solution.vertices.size(); i++) {
+    for (int i = 0; i < solution.vertices.size(); i++) {
         float x = static_cast<float>((solution.vertices[i].x - bottomLeft.x) * xScaler - 1);
         float y = static_cast<float>((solution.vertices[i].y - bottomLeft.y) * yScaler - 1);
         float color = static_cast<float>((solution.vertices[i].value - bottomLeft.value) * colorScaler);
         *vertices << QVector2D(x, y);
         *colors << QVector4D(color, color, color, 0.8f);
     }
-    for (unsigned int i = 0; i < solution.triangleIndices.size(); i++) {
+    for (int i = 0; i < solution.triangleIndices.size(); i++) {
         *indices << solution.triangleIndices[i];
     }
     *dataChanged = true;
     _hasData = true;
-    emit hasDataChanged();
-}
-
-void CalculationResultComponent::doCalculate() {
-    QVector<intcalc::Vector2d> inputPoints = retrieveROSPoints(_regionOfStudy);
-    QVector<intcalc::Vector2d> boundaryCondition = retrieveBoundaryCondition(_boundaryCondition);
-
-    if (inputPoints.size() == 0) {
-        return;
-    }
-
-    // TODO: check if boundaryCondition is null then don't calculate it
-    // or maybe just add a checkbox if to account boundary condition
-
-    intcalc::FEMCalculator femCalculator;
-    femCalculator.setRegionOfStudy(&inputPoints);
-    if (_calculateBoundaryContition) {
-        femCalculator.setGamma2(&boundaryCondition);
-    }
-    femCalculator.setTriangulationSwitches(_triangulationSwitches);
-    femCalculator.setMu(_mu);
-    femCalculator.setSigma(_sigma);
-    femCalculator.setAlpha(_alpha);
-    femCalculator.setBeta([](const intcalc::Vector2d& vertex) -> intcalc::Vector2d {
-        intcalc::Vector2d result;
-        result.x = 10;
-        result.y = 0;
-        return result;
-    });
-    femCalculator.setF([](const intcalc::VertexInfo& vertex) -> double {
-        return 0.5;
-    });
-
-    intcalc::CalcSolution solution = femCalculator.solve();
-    acceptFEMSolution(solution);
-}
-
-void CalculationResultComponent::clear() {
-    vertices->clear();
-    colors->clear();
-    indices->clear();
-    *dataChanged = true;
-    _hasData = false;
     emit hasDataChanged();
 }

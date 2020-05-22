@@ -65,22 +65,6 @@ bool intcalc_utils::onLine(intcalc::Vector2d a, intcalc::Vector2d b, intcalc::Ve
     return abs(diff) <= 0.000000001;
 }
 
-Eigen::MatrixXd intcalc_utils::solveGlobalMatrix(intcalc::GlobalMatrix& matrix, vector<double>& fValues) {
-    Eigen::MatrixXd a(matrix.getSize(), matrix.getSize());
-    for (int i = 0; i < matrix.getSize(); i++) {
-        for (int j = 0; j < matrix.getSize(); j++) {
-            a(i, j) = matrix.getAtNormal(i, j);
-        }
-    }
-
-    Eigen::MatrixXd b(matrix.getSize(), 1);
-    for (unsigned int i = 0; i < fValues.size(); i++) {
-        b(i, 0) = fValues[i];
-    }
-
-    return a.fullPivLu().solve(b);
-}
-
 triangulateio intcalc_utils::doTriangulate(QString triangulationSwitches, intcalc::Region& regionOfStudy) {
     vector<TriangulatePoint> triangulationIn;
     const QVector<intcalc::Vector2d>* points = regionOfStudy.points();

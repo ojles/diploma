@@ -6,7 +6,7 @@
         <file>Omega.qml</file>
         <file>MapRegion.qml</file>
         <file>Vector.js</file>
-        <file>BoundaryCondition.qml</file>
+        <file>Gamma2.qml</file>
         <file>BetaVectorField.qml</file>
         <file>MapVector.qml</file>
         <file>SidePanel.qml</file>

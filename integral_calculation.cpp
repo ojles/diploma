@@ -14,8 +14,7 @@ using std::endl;
 
 namespace intcalc {
     FEMCalculator::FEMCalculator()
-        : _beta(nullptr),
-          _f(nullptr) {
+        : _beta(nullptr) {
     }
 
     double jacobian(const DiscreteElement& el) {
@@ -102,9 +101,9 @@ namespace intcalc {
     // TODO: rename this method
     // there is a confusion between the two boundary conditions
     vector<int> findOutBoundaryEdges(const DiscreteElement& el, const Region& gamma2) {
-        VertexInfo::Type v0Type = el.v[0]->type;
-        VertexInfo::Type v1Type = el.v[1]->type;
-        VertexInfo::Type v2Type = el.v[2]->type;
+        VertexInfo::Type v0Type = el.v[0]->type();
+        VertexInfo::Type v1Type = el.v[1]->type();
+        VertexInfo::Type v2Type = el.v[2]->type();
         VertexInfo v0 = *el.v[0];
         VertexInfo v1 = *el.v[1];
         VertexInfo v2 = *el.v[2];
@@ -132,11 +131,11 @@ namespace intcalc {
         vector<int> edges = findOutBoundaryEdges(el, _gamma2);
 
         for (int i = 0; i < 3; i++) {
-            if (el.v[i]->type == VertexInfo::Type::GAMMA_1) {
+            if (el.v[i]->type() == VertexInfo::Type::GAMMA_1) {
                 continue;
             }
             for (int j = 0; j < 3; j++) {
-                if (el.v[j]->type == VertexInfo::Type::GAMMA_1) {
+                if (el.v[j]->type() == VertexInfo::Type::GAMMA_1) {
                     continue;
                 }
                 g[triangle[i]][triangle[j]] += m_ij(i, j, el, edges);
@@ -166,19 +165,28 @@ namespace intcalc {
         return g;
     }
 
-    QVector<VertexInfo>* prepareDiscreteVerticies(triangulateio& out, Region& regionOfStudy, Region& gamma2) {
+    QVector<VertexInfo>* FEMCalculator::prepareDiscreteVerticies(triangulateio& out) {
         QVector<VertexInfo>* vertices = new QVector<VertexInfo>();
         for (int i = 0; i < out.numberofpoints; i++) {
             double x = out.pointlist[i * 2];
             double y = out.pointlist[i * 2 + 1];
-            VertexInfo vertex(x, y, i);
-            if (!regionOfStudy.hasVertexOnContour(vertex)) {
+            VertexInfo vertex(x, y);
+
+            if (!_regionOfStudy.hasVertexOnContour(vertex)) {
                 vertex.setType(VertexInfo::Type::INNER);
-            } else if (gamma2.hasVertexOnContour(vertex)) {
+            } else if (_gamma2.hasVertexOnContour(vertex)) {
                 vertex.setType(VertexInfo::Type::GAMMA_2);
             } else {
                 vertex.setType(VertexInfo::Type::GAMMA_1);
             }
+
+            vertex.setIsInConservacyArea(false);
+            for (auto region : _conservacyAreas) {
+                if (region.hasVertexInside(vertex)) {
+                    vertex.setIsInConservacyArea(true);
+                }
+            }
+
             vertices->push_back(vertex);
         }
         return vertices;
@@ -199,7 +207,7 @@ namespace intcalc {
     Eigen::MatrixXd solveMatrix(double** g, QVector<VertexInfo>* vertices, std::function<double(const VertexInfo&)> f) {
         vector<int> nonGamma1;
         for (int i = 0; i < vertices->size(); i++) {
-            if (vertices->at(i).type == VertexInfo::Type::GAMMA_1) {
+            if (vertices->at(i).type() == VertexInfo::Type::GAMMA_1) {
                 continue;
             }
             nonGamma1.push_back(i);
@@ -227,12 +235,14 @@ namespace intcalc {
 
         triangulateio out = intcalc_utils::doTriangulate(_triangulationSwitches, _regionOfStudy);
 
-        QVector<VertexInfo>* vertices = prepareDiscreteVerticies(out, _regionOfStudy, _gamma2);
+        QVector<VertexInfo>* vertices = prepareDiscreteVerticies(out);
         QVector<int*> triangles = prepareTrianglesVector(out);
 
         double** g = M(vertices, triangles);
 
-        Eigen::MatrixXd solutionMatrix = solveMatrix(g, vertices, _f);
+        Eigen::MatrixXd solutionMatrix = solveMatrix(g, vertices, [](const VertexInfo& vertex) ->double {
+            return 0.5;
+        });
 
         CalcSolution solution;
         int solIndex = 0;
@@ -241,7 +251,7 @@ namespace intcalc {
             resultVertex.x = vertex.x;
             resultVertex.y = vertex.y;
             resultVertex.value = 0;
-            if (vertex.type != VertexInfo::Type::GAMMA_1) {
+            if (vertex.type() != VertexInfo::Type::GAMMA_1) {
                 resultVertex.value = solutionMatrix(solIndex, 0);
                 solIndex++;
             }
@@ -249,12 +259,12 @@ namespace intcalc {
         }
 
         for (int i = 0; i < out.numberoftriangles; i++) {
-            solution.triangleIndices.push_back(triangles[i][0]);
-            solution.triangleIndices.push_back(triangles[i][1]);
-            solution.triangleIndices.push_back(triangles[i][2]);
+            for (int j = 0; j < 3; j++) {
+                solution.triangleIndices.push_back(triangles[i][j]);
+            }
         }
 
-        // clear resources
+        // clean resources
         free(out.trianglelist);
         free(out.pointlist);
         for (auto triangle : triangles) {
@@ -265,8 +275,8 @@ namespace intcalc {
     }
 
     void FEMCalculator::requireDataNotNull() {
-        if (_beta == nullptr || _f == nullptr) {
-            throw "Functions not specified!";
+        if (_beta == nullptr) {
+            throw "Beta not specified!";
         }
 
         if (_regionOfStudy.points() == nullptr) {

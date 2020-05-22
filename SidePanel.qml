@@ -10,7 +10,7 @@ Rectangle {
 
     property bool showBetaVectorField: showBetaVectorFieldCheckbox.checked;
     property bool showTriangulation: showTriangulationCheckbox.checked;
-    property bool calculateBoundaryCondition: calculateBoundaryConditionCheckBox.checked;
+    property bool calculateGamma2: calculateGamma2CheckBox.checked;
     property string triangulationSwitches: triangulationSwitchesTextField.text
     property string mu: muTextField.text
     property string sigma: sigmaTextField.text
@@ -37,7 +37,7 @@ Rectangle {
                 Layout.fillWidth: true
             }
             CheckBox {
-                id: calculateBoundaryConditionCheckBox
+                id: calculateGamma2CheckBox
                 Layout.topMargin: 15
                 text: qsTr("Second boundary condition")
             }

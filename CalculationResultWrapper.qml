@@ -8,8 +8,7 @@ CalculationResult {
     readonly property double padding: 0.00015;
 
     property var map;
-    // short for region of study
-    property var ros;
+    property var ros: regionOfStudy;
 
     property var corners;
 

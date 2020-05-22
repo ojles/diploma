@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <eigen3/Eigen/Geometry>
+#include <limits>
 
 #include "triangulate.h"
 
@@ -32,7 +33,7 @@ namespace intcalc {
         }
 
         bool onLine(const Vector2d& a, const Vector2d& b) const {
-            if (!onSegment(a, *this, b)) {
+            if (!onSegment(a, b)) {
                 return false;
             }
 
@@ -45,14 +46,55 @@ namespace intcalc {
             return sqrt(pow(this->x - other.x, 2) + pow(this->y - other.y, 2));
         }
 
-    private:
-        bool onSegment(const Vector2d& p, const Vector2d& q, const Vector2d& r) const {
-            if (q.x <= std::max(p.x, r.x)
-                    && q.x >= std::min(p.x, r.x)
-                    && q.y <= std::max(p.y, r.y)
-                    && q.y >= std::min(p.y, r.y)) {
+        bool onSegment(const Vector2d& a, const Vector2d& b) const {
+            return _onSegment(a, *this, b);
+        }
+
+        static int _orientation(const Vector2d& a, const Vector2d& b, const Vector2d& c) {
+            double orientation = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+            if (abs(orientation) <= 0.000000001) {
+                return 0;
+            }
+            return orientation > 0 ? 1 : 2;
+        }
+
+        static bool _onSegment(const Vector2d& a, const Vector2d& b, const Vector2d& c) {
+            if (b.x <= std::max(a.x, c.x)
+                    && b.x >= std::min(a.x, c.x)
+                    && b.y <= std::max(a.y, c.y)
+                    && b.y >= std::min(a.y, c.y)) {
                return true;
             }
+            return false;
+        }
+
+        static bool _doIntersect(const Vector2d& p1, const Vector2d& q1, const Vector2d& p2, const Vector2d& q2) {
+            int o1 = _orientation(p1, q1, p2);
+            int o2 = _orientation(p1, q1, q2);
+            int o3 = _orientation(p2, q2, p1);
+            int o4 = _orientation(p2, q2, q1);
+
+            // we need the lines to be colinear
+            if (o1 != o2 && o3 != o4) {
+                return false;
+            }
+            // p1, q1 and p2 are colinear and p2 lies on segment p1q1
+            if (o1 == 0 && _onSegment(p1, p2, q1)) {
+                return true;
+            }
+            // p1, q1 and q2 are colinear and q2 lies on segment p1q1
+            if (o2 == 0 && _onSegment(p1, q2, q1)) {
+                return true;
+            }
+            // p2, q2 and p1 are colinear and p1 lies on segment p2q2
+            if (o3 == 0 && _onSegment(p2, p1, q2)) {
+                return true;
+            }
+             // p2, q2 and q1 are colinear and q1 lies on segment p2q2
+            if (o4 == 0 && _onSegment(p2, q1, q2)) {
+                return true;
+            }
+
             return false;
         }
     };
@@ -65,22 +107,36 @@ namespace intcalc {
             INNER
         };
 
-        Type type;
-        unsigned int globalIdx;
 
-        VertexInfo(double x, double y, unsigned int globalIdx)
+        VertexInfo(double x, double y)
             : Vector2d(x, y),
-              type(NONE),
-              globalIdx(globalIdx) {
+              _type(NONE),
+              _isInConservacyArea(false) {
         }
 
         void setType(Type type) {
-            if (this->type == NONE) {
-                this->type = type;
+            if (_type == NONE) {
+                _type = type;
             } else {
                 throw "You can set a vertex type only once!";
             }
         }
+
+        void setIsInConservacyArea(bool isInConservacyArea) {
+            _isInConservacyArea = isInConservacyArea;
+        }
+
+        Type type() const {
+            return _type;
+        }
+
+        bool isInConservacyArea() const {
+            return _isInConservacyArea;
+        }
+
+    private:
+        Type _type;
+        bool _isInConservacyArea;
     };
 
     class Region {
@@ -91,6 +147,26 @@ namespace intcalc {
 
         Region(const QVector<Vector2d>* points, bool isClosed)
             : _points(points), _isClosed(isClosed) {
+            if (isClosed) {
+                _bottomLeft.x = points->at(0).x;
+                _bottomLeft.y = points->at(0).y;
+                _topRight.x = points->at(0).x;
+                _topRight.y = points->at(0).y;
+                for (auto point : *points) {
+                    if (point.x < _bottomLeft.x) {
+                        _bottomLeft.x = point.x;
+                    }
+                    if (point.x > _topRight.x) {
+                        _topRight.x = point.x;
+                    }
+                    if (point.y < _bottomLeft.y) {
+                        _bottomLeft.y = point.y;
+                    }
+                    if (point.y > _topRight.y) {
+                        _topRight.y = point.y;
+                    }
+                }
+            }
         }
 
         bool hasVertexOnContour(const Vector2d& vertex) const {
@@ -107,11 +183,6 @@ namespace intcalc {
                 }
             }
 
-            Vector2d a = _points->at(0);
-            Vector2d b = _points->at(pointsSize - 1);
-            if (_isClosed && vertex.onLine(a, b)) {
-                return true;
-            }
             return false;
         }
 
@@ -129,12 +200,34 @@ namespace intcalc {
                 }
             }
 
-            Vector2d c = _points->at(0);
-            Vector2d d = _points->at(pointsSize - 1);
-            if (_isClosed && a.onLine(c, d) && b.onLine(c, d)) {
-                return true;
-            }
             return false;
+        }
+
+        bool hasVertexInside(const Vector2d& vertex) const {
+            if (!_isClosed) {
+                throw "This region is not closed!";
+            }
+
+            if (_bottomLeft.x > vertex.x || vertex.x > _topRight.x
+                    || _bottomLeft.y > vertex.y || vertex.y > _topRight.y) {
+                return false;
+            }
+
+            Vector2d extreme(vertex.x, std::numeric_limits<double>::max());
+            int count = 0;
+            const int pointsSize = _points->size();
+            for (int i = 0; i < pointsSize - 1; i++) {
+                Vector2d a = _points->at(i);
+                Vector2d b = _points->at(i + 1);
+                if (Vector2d::_doIntersect(a, b, vertex, extreme)) {
+                    if (Vector2d::_orientation(a, vertex, b) == 0) {
+                        return Vector2d::_onSegment(a, vertex, b);
+                    }
+                }
+                count++;
+            }
+
+            return (count % 2) == 1;
         }
 
         const QVector<Vector2d>* points() const {
@@ -143,6 +236,8 @@ namespace intcalc {
 
     private:
         const QVector<Vector2d>* _points;
+        Vector2d _bottomLeft;
+        Vector2d _topRight;
         bool _isClosed;
     };
 
@@ -171,68 +266,6 @@ namespace intcalc {
                 (v[a]->y + v[b]->y) / 2.0
             );
         }
-    };
-
-    struct ElementMatrix {
-        static const unsigned int SIZE = 3;
-        double data[SIZE][SIZE];
-    };
-
-    class GlobalMatrix {
-    public:
-        GlobalMatrix(int size, vector<int> innerIndices, int allPoints)
-        {
-            this->size = size;
-
-            idxMap = new int[allPoints];
-            for (int i = 0; i < allPoints; i++) {
-                idxMap[i] = -1;
-            }
-            for (int i = 0; i < innerIndices.size(); i++) {
-                idxMap[innerIndices[i]] = i;
-            }
-
-            data = new double*[size];
-            for (int i = 0; i < size; i++) {
-                data[i] = new double[size];
-                for (int j = 0; j < size; j++) {
-                    data[i][j] = 0;
-                }
-            }
-        }
-
-        ~GlobalMatrix() {
-            for (int i = 0; i < size; i++) {
-                delete data[i];
-            }
-            delete data;
-            delete idxMap;
-        }
-
-        inline void setAt(int i, int j, double value) {
-            data[idxMap[i]][idxMap[j]] = value;
-        }
-
-        inline double getAt(int i, int j) {
-            return data[idxMap[i]][idxMap[j]];
-        }
-
-        inline double getAtNormal(int i, int j) {
-            return data[i][j];
-        }
-
-        int getSize() {
-            return size;
-        }
-
-        int* getIdxMap() {
-            return idxMap;
-        }
-
-    private:
-        double **data;
-        int* idxMap;
-        int size;
     };
 
     struct Point2DValue {
@@ -265,6 +298,12 @@ namespace intcalc {
             _gamma2 = Region(gamma2Points, false);
         }
 
+        void setConservacyAreas(QVector<QVector<Vector2d>*> conservacyAreas) {
+            for (auto area : conservacyAreas) {
+                _conservacyAreas.push_back(Region(area, true));
+            }
+        }
+
         void setMu(double mu) {
             _mu = mu;
         }
@@ -281,16 +320,12 @@ namespace intcalc {
             _sigma = sigma;
         }
 
-        void setF(std::function<double(const VertexInfo&)> f) {
-            _f = f;
-        }
-
         void setTriangulationSwitches(QString triangulationSwitches) {
             _triangulationSwitches = triangulationSwitches;
         }
 
     private:
-        pair<vector<int>, vector<int>> splitInnerAndOuterVertices(triangulateio& out);
+        QVector<VertexInfo>* prepareDiscreteVerticies(triangulateio& out);
         double b(Vector2d edgeCenter);
         double m_ij(int i, int j, const DiscreteElement& el, vector<int>& edges);
         void m(double** g, const DiscreteElement& el, const int* idx);
@@ -299,12 +334,12 @@ namespace intcalc {
 
         Region _regionOfStudy;
         Region _gamma2;
+        QVector<Region> _conservacyAreas;
 
         double _mu;
         double _alpha;
         double _sigma;
         std::function<Vector2d(const Vector2d&)> _beta;
-        std::function<double(const VertexInfo&)> _f;
         QString _triangulationSwitches;
     };
 }

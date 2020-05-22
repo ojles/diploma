@@ -23,9 +23,6 @@ namespace intcalc_utils
     // Check if point b is on line ac
     bool onLine(intcalc::Vector2d a, intcalc::Vector2d b, intcalc::Vector2d c);
 
-    // solve global matrix using Eigen library
-    Eigen::MatrixXd solveGlobalMatrix(intcalc::GlobalMatrix& matrix, vector<double>& fValues);
-
     // wrapper function for triangulation
     triangulateio doTriangulate(QString triangulationSwitches, intcalc::Region& regionOfStudy);
 

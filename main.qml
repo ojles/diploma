@@ -56,8 +56,8 @@ ApplicationWindow {
             }
         }
 
-        BoundaryCondition {
-            id: boundaryCondition
+        Gamma2 {
+            id: gamma2
             mapRegion: regionOfStudy
             line {
                 width: 7
@@ -85,14 +85,14 @@ ApplicationWindow {
                 color: Qt.rgba(0, 0, 0, 0);
                 CalculationResultWrapper {
                     id: calculationResult
-                    map: map
-                    ros: regionOfStudy
                     anchors.fill: parent
+                    map: map
                     regionOfStudy: regionOfStudy
-                    boundaryCondition: boundaryCondition
+                    gamma2: gamma2
+                    conservacyAreas: map.omegaPolylines
                     triangulationSwitches: sidePanel.triangulationSwitches
                     showTriangulation: sidePanel.showTriangulation
-                    calculateBoundaryCondition: sidePanel.calculateBoundaryCondition
+                    calculateGamma2: sidePanel.calculateGamma2
                     mu: sidePanel.mu
                     sigma: sidePanel.sigma
                     alpha: sidePanel.alpha
@@ -101,22 +101,22 @@ ApplicationWindow {
         }
 
         MouseArea {
-            property bool wasLastMouseClickOutsideROS: false
+            property bool lastMouseClickOutsideROS: false
 
             anchors.fill: parent
 
             onClicked: {
                 let coordinate = map.toCoordinate(Qt.point(mouse.x, mouse.y));
-                if (map.currentPolyline === boundaryCondition) {
-                    wasLastMouseClickOutsideROS = false;
+                if (map.currentPolyline === gamma2) {
+                    lastMouseClickOutsideROS = false;
                     map.currentPolyline.addCoordinateToContour(coordinate);
                     return;
                 }
                 if (map.currentPolyline !== regionOfStudy && !regionOfStudy.hasInside(coordinate)) {
-                    wasLastMouseClickOutsideROS = true;
+                    lastMouseClickOutsideROS = true;
                     return;
                 }
-                wasLastMouseClickOutsideROS = false;
+                lastMouseClickOutsideROS = false;
                 map.currentPolyline.addCoordinate(coordinate);
             }
 
@@ -124,38 +124,39 @@ ApplicationWindow {
                 mouse.accepted = true
 
                 let minimumVertices = 3;
-                if (map.currentPolyline === boundaryCondition) {
+                if (map.currentPolyline === gamma2) {
                     minimumVertices = 2;
                 }
 
                 // the +1 is because even though a double-click was detected
-                // the single-click is still processed and those the last point should be ignorred
+                // the single-click is still processed and those the last point should be ignored
                 if (map.currentPolyline.path.length < minimumVertices + 1) {
-                    if (!wasLastMouseClickOutsideROS) {
+                    if (!lastMouseClickOutsideROS) {
                         map.currentPolyline.removeCoordinate(map.currentPolyline.path.length - 1)
                     }
                     return;
                 }
 
-                if (map.currentPolyline === boundaryCondition) {
+                if (map.currentPolyline === gamma2) {
                     map.currentPolyline = map.omegaPolylineComponent.createObject(map);
                     map.addMapItem(map.currentPolyline);
                     map.omegaPolylines.push(map.currentPolyline);
-                    map.dataReadyForCalculation = true;
                     return;
                 }
 
-                if (wasLastMouseClickOutsideROS) {
+                if (lastMouseClickOutsideROS) {
                     map.currentPolyline.joinEnds();
                 } else {
                     map.currentPolyline.joinEndsIgnoringLastPoint();
                 }
+
                 if (map.currentPolyline === regionOfStudy) {
-                    map.currentPolyline = boundaryCondition;
+                    map.currentPolyline = gamma2;
                 } else {
                     map.currentPolyline = map.omegaPolylineComponent.createObject(map);
                     map.addMapItem(map.currentPolyline);
                     map.omegaPolylines.push(map.currentPolyline);
+                    map.dataReadyForCalculation = true;
                 }
             }
         }
@@ -164,7 +165,7 @@ ApplicationWindow {
             dataReadyForCalculation = false;
 
             regionOfStudy.path = [];
-            boundaryCondition.clearFromMap();
+            gamma2.clearFromMap();
             while (omegaPolylines.length !== 0) {
                 removeMapItem(omegaPolylines.pop());
             }
