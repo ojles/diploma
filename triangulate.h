@@ -8,7 +8,7 @@
 using std::vector;
 
 extern "C" {
-    void triangulate(char *triswitches, triangulateio *in, triangulateio *out, triangulateio *vorout);
+    void triangulate(char* triswitches, triangulateio* in, triangulateio* out, triangulateio* vorout);
 }
 
 struct TriangulatePoint {
@@ -20,7 +20,7 @@ class Triangulate {
 public:
     Triangulate();
 
-    triangulateio triangulate(char* switches, vector<TriangulatePoint> &points);
+    triangulateio triangulate(char* switches, vector<TriangulatePoint>& points);
 };
 
 #endif // TRIANGULATE_H

@@ -3,8 +3,9 @@
 Triangulate::Triangulate() {
 }
 
-triangulateio Triangulate::triangulate(char* switches, vector<TriangulatePoint> &points) {
-    triangulateio in, out;
+triangulateio Triangulate::triangulate(char* switches, vector<TriangulatePoint>& points) {
+    triangulateio in;
+    triangulateio out;
 
     in.numberofpoints = (int) points.size();
     in.numberofpointattributes = 0;

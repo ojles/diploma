@@ -104,9 +104,9 @@ void CalculationResultComponent::setAlpha(double alpha) {
     emit alphaChanged();
 }
 
-vector<intcalc::Vector2d> retrieveROSPoints(QObject* ros) {
+QVector<intcalc::Vector2d> retrieveROSPoints(QObject* ros) {
     if (ros == nullptr) {
-        return vector<intcalc::Vector2d>();
+        return QVector<intcalc::Vector2d>();
     }
 
     QList<QVariant> path = ros->property("path").toList();
@@ -117,10 +117,10 @@ vector<intcalc::Vector2d> retrieveROSPoints(QObject* ros) {
 #ifdef INTCALC_DEBUG
         cerr << "For some reason pathSize in retrieveROSPoints() is less then 3!" << endl;
 #endif
-        return vector<intcalc::Vector2d>();
+        return QVector<intcalc::Vector2d>();
     }
 
-    vector<intcalc::Vector2d> points;
+    QVector<intcalc::Vector2d> points;
     for (int i = 0; i < pathSize; i++) {
         QGeoCoordinate coordinate = path.at(i).value<QGeoCoordinate>();
         intcalc::Vector2d point;
@@ -132,9 +132,9 @@ vector<intcalc::Vector2d> retrieveROSPoints(QObject* ros) {
     return points;
 }
 
-vector<intcalc::Vector2d> retrieveBoundaryCondition(QObject* boundaryCondition) {
+QVector<intcalc::Vector2d> retrieveBoundaryCondition(QObject* boundaryCondition) {
     if (boundaryCondition == nullptr) {
-        return vector<intcalc::Vector2d>();
+        return QVector<intcalc::Vector2d>();
     }
 
     QList<QVariant> path = boundaryCondition->property("path").toList();
@@ -144,10 +144,10 @@ vector<intcalc::Vector2d> retrieveBoundaryCondition(QObject* boundaryCondition) 
 #ifdef INTCALC_DEBUG
         cerr << "For some reason pathSize in retrieveBoundaryCondition() is less then 2!" << endl;
 #endif
-        return vector<intcalc::Vector2d>();
+        return QVector<intcalc::Vector2d>();
     }
 
-    vector<intcalc::Vector2d> points;
+    QVector<intcalc::Vector2d> points;
     for (int i = 0; i < pathSize; i++) {
         QGeoCoordinate coordinate = path.at(i).value<QGeoCoordinate>();
         intcalc::Vector2d point;
@@ -212,8 +212,8 @@ void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& soluti
 }
 
 void CalculationResultComponent::doCalculate() {
-    vector<intcalc::Vector2d> inputPoints = retrieveROSPoints(_regionOfStudy);
-    vector<intcalc::Vector2d> boundaryCondition = retrieveBoundaryCondition(_boundaryCondition);
+    QVector<intcalc::Vector2d> inputPoints = retrieveROSPoints(_regionOfStudy);
+    QVector<intcalc::Vector2d> boundaryCondition = retrieveBoundaryCondition(_boundaryCondition);
 
     if (inputPoints.size() == 0) {
         return;
@@ -223,25 +223,21 @@ void CalculationResultComponent::doCalculate() {
     // or maybe just add a checkbox if to account boundary condition
 
     intcalc::FEMCalculator femCalculator;
-    femCalculator.setPoints(&inputPoints);
+    femCalculator.setRegionOfStudy(&inputPoints);
     if (_calculateBoundaryContition) {
-        femCalculator.setBoundaryCondition(&boundaryCondition);
+        femCalculator.setGamma2(&boundaryCondition);
     }
     femCalculator.setTriangulationSwitches(_triangulationSwitches);
     femCalculator.setMu(_mu);
     femCalculator.setSigma(_sigma);
     femCalculator.setAlpha(_alpha);
-    femCalculator.setBeta([](double x, double y) -> intcalc::Vector2d {
-        Q_UNUSED(x)
-        Q_UNUSED(y)
+    femCalculator.setBeta([](const intcalc::Vector2d& vertex) -> intcalc::Vector2d {
         intcalc::Vector2d result;
-        result.x = 15;
+        result.x = 10;
         result.y = 0;
         return result;
     });
-    femCalculator.setF([](double x, double y) -> double {
-        Q_UNUSED(x)
-        Q_UNUSED(y)
+    femCalculator.setF([](const intcalc::VertexInfo& vertex) -> double {
         return 0.5;
     });
 

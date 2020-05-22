@@ -80,3 +80,34 @@ Eigen::MatrixXd intcalc_utils::solveGlobalMatrix(intcalc::GlobalMatrix& matrix, 
 
     return a.fullPivLu().solve(b);
 }
+
+triangulateio intcalc_utils::doTriangulate(QString triangulationSwitches, intcalc::Region& regionOfStudy) {
+    vector<TriangulatePoint> triangulationIn;
+    const QVector<intcalc::Vector2d>* points = regionOfStudy.points();
+    for (int i = 0; i < points->size(); i++) {
+        TriangulatePoint point;
+        point.x = points->at(i).x;
+        point.y = points->at(i).y;
+        triangulationIn.push_back(point);
+    }
+    Triangulate triangulate;
+    char* switchesArray = new char[triangulationSwitches.length()];
+    memcpy(switchesArray, triangulationSwitches.toStdString().c_str(), triangulationSwitches.length());
+    triangulateio result = triangulate.triangulate(switchesArray, triangulationIn);
+    delete[] switchesArray;
+    return result;
+}
+
+vector<int> intcalc_utils::filterTriPointsOnLine(vector<intcalc::Vector2d>* line, vector<int> triPoints, triangulateio out) {
+    vector<int> res;
+    for (unsigned int i = 0; i < line->size() - 1; i++) {
+        for (int triPoint : triPoints) {
+            intcalc::Vector2d triPointObj(out.pointlist[triPoint * 2], out.pointlist[triPoint * 2 + 1]);
+            if (intcalc_utils::onLine(line->at(i), triPointObj, line->at(i + 1)) ) {
+                res.push_back(triPoint);
+            }
+        }
+    }
+    // TODO: check if unique
+    return res;
+}

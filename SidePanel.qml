@@ -39,7 +39,7 @@ Rectangle {
             CheckBox {
                 id: calculateBoundaryConditionCheckBox
                 Layout.topMargin: 15
-                text: qsTr("Enable boundary condition")
+                text: qsTr("Second boundary condition")
             }
             Text {
                 text: qsTr("Mu:")

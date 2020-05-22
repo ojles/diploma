@@ -14,98 +14,27 @@ using std::endl;
 
 namespace intcalc {
     FEMCalculator::FEMCalculator()
-        : points(nullptr),
-          boundaryCondition(nullptr),
-          beta(nullptr),
-          f(nullptr) {
+        : _beta(nullptr),
+          _f(nullptr) {
     }
 
-    triangulateio doTriangulate(QString triangulationSwitches, vector<Vector2d>* points) {
-        vector<TriangulatePoint> triangulationIn;
-        for (unsigned long i = 0; i < points->size(); i++) {
-            TriangulatePoint point;
-            point.x = points->at(i).x;
-            point.y = points->at(i).y;
-            triangulationIn.push_back(point);
-        }
-        Triangulate triangulate;
-        char* switchesArray = new char[triangulationSwitches.length()];
-        memcpy(switchesArray, triangulationSwitches.toStdString().c_str(), triangulationSwitches.length());
-        triangulateio result = triangulate.triangulate(switchesArray, triangulationIn);
-        delete[] switchesArray;
-        return result;
+    double jacobian(const DiscreteElement& el) {
+        return (el.v[1]->x - el.v[0]->x) * (el.v[2]->y - el.v[0]->y) - (el.v[2]->x - el.v[0]->x) * (el.v[1]->y - el.v[0]->y);
     }
 
-    vector<int> filterTriPointsOnLine(vector<Vector2d>* line, vector<int> triPoints, triangulateio out) {
-        vector<int> res;
-        for (unsigned int i = 0; i < line->size() - 1; i++) {
-            for (int triPoint : triPoints) {
-                Vector2d triPointObj(out.pointlist[triPoint * 2], out.pointlist[triPoint * 2 + 1]);
-                if (intcalc_utils::onLine(line->at(i), triPointObj, line->at(i + 1)) ) {
-                    res.push_back(triPoint);
-                }
-            }
-        }
-        // TODO: check if unique
-        return res;
-    }
-
-    CalcSolution FEMCalculator::solve() {
-        requireDataNotNull();
-
-        // TODO: check if triangulationio is deleted
-        triangulateio out = doTriangulate(triangulationSwitches, points);
-
-        pair<vector<int>, vector<int>> splitVertices = splitInnerAndOuterVertices(out);
-        vector<int> firstBoundary = splitVertices.first;
-        if (boundaryCondition != nullptr) {
-            vector<int> secondBoundary = filterTriPointsOnLine(boundaryCondition, splitVertices.second, out);
-            firstBoundary.reserve(firstBoundary.size() + secondBoundary.size());
-            firstBoundary.insert(firstBoundary.end(), secondBoundary.begin(), secondBoundary.end());
-        }
-
-        GlobalMatrix globalMatrix = M(out, firstBoundary);
-
-        vector<double> fValues;
-        for (auto i : firstBoundary) {
-            fValues.push_back(f(out.pointlist[i * 2], out.pointlist[i * 2 + 1]));
-        }
-        Eigen::MatrixXd solutionMatrix = intcalc_utils::solveGlobalMatrix(globalMatrix, fValues);
-
-        CalcSolution solution;
-        int* idxMap = globalMatrix.getIdxMap();
-        for (int i = 0; i < out.numberofpoints; i++) {
-            int globalIdx = idxMap[i];
-            Point2DValue point;
-            point.x = out.pointlist[i * 2];
-            point.y = out.pointlist[i * 2 + 1];
-            point.value = globalIdx == -1 ? 0 : solutionMatrix(globalIdx, 0);
-            solution.vertices.push_back(point);
-        }
-        for (int i = 0; i < out.numberoftriangles * out.numberofcorners; i++) {
-            solution.triangleIndices.push_back(out.trianglelist[i] - 1);
-        }
-
-        return solution;
-    }
-
-    double jacobian(DiscreteElement& el) {
-        return (el.x[1] - el.x[0]) * (el.y[2] - el.y[0]) - (el.x[2] - el.x[0]) * (el.y[1] - el.y[0]);
-    }
-
-    Vector2d nablaPhi(int vertex, DiscreteElement& el) {
+    Vector2d nablaPhi(int vertex, const DiscreteElement& el) {
         Vector2d vector;
         if (vertex == 0) {
-            vector.x = el.y[1] - el.y[2];
-            vector.y = el.x[2] - el.x[1];
+            vector.x = el.v[1]->y - el.v[2]->y;
+            vector.y = el.v[2]->x - el.v[1]->x;
         }
         else if (vertex == 1) {
-            vector.x = el.y[2] - el.y[0];
-            vector.y = el.x[0] - el.x[2];
+            vector.x = el.v[2]->y - el.v[0]->y;
+            vector.y = el.v[0]->x - el.v[2]->x;
         }
         else if (vertex == 2) {
-            vector.x = el.y[0] - el.y[1];
-            vector.y = el.x[1] - el.x[0];
+            vector.x = el.v[0]->y - el.v[1]->y;
+            vector.y = el.v[1]->x - el.v[0]->x;
         }
         else {
             throw "Invalid value of vertex for nablaPhi";
@@ -113,15 +42,15 @@ namespace intcalc {
         return vector / jacobian(el);
     }
 
-    double firstIntegral(int i, int j, DiscreteElement& el) {
+    double firstIntegral(int i, int j, const DiscreteElement& el) {
         return (abs(jacobian(el)) / 2.0) * (nablaPhi(i, el) * nablaPhi(j, el));
     }
 
-    Vector2d secondIntegral(int i, int j, DiscreteElement& el) {
+    Vector2d secondIntegral(int j, const DiscreteElement& el) {
         return nablaPhi(j, el) * (abs(jacobian(el)) / 6.0);
     }
 
-    double thirdIntegral(int i, int j, DiscreteElement& el) {
+    double thirdIntegral(int i, int j, const DiscreteElement& el) {
         if (i == j) {
             return abs(jacobian(el)) / 12.0;
         }
@@ -154,45 +83,14 @@ namespace intcalc {
         return nVector;
     }
 
-    pair<vector<int>, vector<int>> FEMCalculator::splitInnerAndOuterVertices(triangulateio& out) {
-        vector<int> inner;
-        vector<int> outer;
-        for (int i = 0; i < out.numberofpoints; i++) {
-            inner.push_back(i);
-        }
-
-        // TODO: rename points to outer points/lines
-        // TODO: rename this->points to simething else, like a contour
-        for (unsigned int i = 0; i < points->size(); i++) {
-            Vector2d first = points->at(i);
-            Vector2d second = (i + 1 < points->size()) ? points->at(i + 1) : points->at(0);
-            for (int j = 0; j < out.numberofpoints; j++) {
-                Vector2d triangleVertex(out.pointlist[j * 2], out.pointlist[j * 2 + 1]);
-                if (intcalc_utils::onLine(first, triangleVertex, second)) {
-                    auto outerVertex = find(inner.begin(), inner.end(), j);
-                    if (outerVertex != inner.end()) {
-                        inner.erase(outerVertex);
-                        outer.push_back(j);
-                    }
-                }
-            }
-        }
-
-        // TODO: it's probably useless here because the array is already sorted
-        std::sort(inner.begin(), inner.end());
-        std::sort(outer.begin(), outer.end());
-
-        return pair<vector<int>, vector<int>>(inner, outer);
-    }
-
     double FEMCalculator::b(Vector2d edgeCenter) {
-        return alpha - beta(edgeCenter.x, edgeCenter.y) * n(edgeCenter);
+        return _alpha - _beta(edgeCenter) * n(edgeCenter);
     }
 
-    double FEMCalculator::m_ij(int i, int j, DiscreteElement& el, vector<uint8_t>& edges) {
-        double result = mu * firstIntegral(i, j, el)
-                + beta(el.x[0], el.y[0]) * secondIntegral(i, j, el)
-                + sigma * thirdIntegral(i, j, el);
+    double FEMCalculator::m_ij(int i, int j, const DiscreteElement& el, vector<int>& edges) {
+        double result = _mu * firstIntegral(i, j, el)
+                + _beta(*el.v[0]) * secondIntegral(j, el)
+                + _sigma * thirdIntegral(i, j, el);
 
         for (unsigned int k = 0; k < edges.size(); k++) {
             result += b(el.eCenter(edges[k])) * fourthIntegral(i, j, edges[k], el.eLen(edges[k]));
@@ -203,136 +101,176 @@ namespace intcalc {
 
     // TODO: rename this method
     // there is a confusion between the two boundary conditions
-    vector<uint8_t> findOutBoundaryEdges(DiscreteElement& el, vector<Vector2d>* boundaryCondition) {
-        vector<uint8_t> edges;
-        for (unsigned int i = 0; i < boundaryCondition->size() - 1; i++) {
-            Vector2d p1(el.x[0], el.y[0]);
-            Vector2d q1(el.x[1], el.y[1]);
-            Vector2d p2(boundaryCondition->at(i).x, boundaryCondition->at(i).y);
-            Vector2d q2(boundaryCondition->at(i + 1).x, boundaryCondition->at(i + 1).y);
-            if (intcalc_utils::doIntersect(p1, q1, p2, q2)) {
-                edges.push_back(2);
-            }
+    vector<int> findOutBoundaryEdges(const DiscreteElement& el, const Region& gamma2) {
+        VertexInfo::Type v0Type = el.v[0]->type;
+        VertexInfo::Type v1Type = el.v[1]->type;
+        VertexInfo::Type v2Type = el.v[2]->type;
+        VertexInfo v0 = *el.v[0];
+        VertexInfo v1 = *el.v[1];
+        VertexInfo v2 = *el.v[2];
 
-            p1.x = el.x[1];
-            p1.y = el.y[1];
-            q1.x = el.x[2];
-            q1.y = el.y[2];
-            if (intcalc_utils::doIntersect(p1, q1, p2, q2)) {
-                edges.push_back(0);
-            }
-
-            p1.x = el.x[2];
-            p1.y = el.y[2];
-            q1.x = el.x[0];
-            q1.y = el.y[0];
-            if (intcalc_utils::doIntersect(p1, q1, p2, q2)) {
-                edges.push_back(1);
-            }
+        vector<int> edges;
+        if (v0Type == v1Type
+                && v0Type == VertexInfo::Type::GAMMA_2
+                && gamma2.hasLineOnContour(v0, v1)) {
+            edges.push_back(2);
         }
-
-        std::vector<uint8_t>::iterator it = std::unique(edges.begin(), edges.end());
-        edges.resize(std::distance(edges.begin(), it));
-
-#ifdef INTCALC_DEBUG
-        if (edges.size() > 0) {
-            cout << "Found " << edges.size() << " edges!" << endl;
+        if (v1Type == v2Type
+                && v1Type == VertexInfo::Type::GAMMA_2
+                && gamma2.hasLineOnContour(v1, v2)) {
+            edges.push_back(0);
         }
-#endif
-
+        if (v2Type == v0Type
+                && v2Type == VertexInfo::Type::GAMMA_2
+                && gamma2.hasLineOnContour(v2, v0)) {
+            edges.push_back(1);
+        }
         return edges;
     }
 
-    ElementMatrix FEMCalculator::m(DiscreteElement& el, vector<int> vertices) {
-        vector<uint8_t> edges;
-        if (boundaryCondition != nullptr) {
-            edges = findOutBoundaryEdges(el, boundaryCondition);
-        }
+    void FEMCalculator::m(double** g, const DiscreteElement& el, const int* triangle) {
+        vector<int> edges = findOutBoundaryEdges(el, _gamma2);
 
-        ElementMatrix matrix;
-        for (auto i : vertices) {
-            for (auto j : vertices) {
-                matrix.data[i][j] = m_ij(i, j, el, edges);
+        for (int i = 0; i < 3; i++) {
+            if (el.v[i]->type == VertexInfo::Type::GAMMA_1) {
+                continue;
+            }
+            for (int j = 0; j < 3; j++) {
+                if (el.v[j]->type == VertexInfo::Type::GAMMA_1) {
+                    continue;
+                }
+                g[triangle[i]][triangle[j]] += m_ij(i, j, el, edges);
             }
         }
-
-        return matrix;
     }
 
-    GlobalMatrix FEMCalculator::M(triangulateio& out, vector<int> innerVertices) {
-        GlobalMatrix globalMatrix(innerVertices.size(), innerVertices, out.numberofpoints);
-        for (int i = 0; i < out.numberoftriangles; i++) {
-            int firstVertex = out.trianglelist[i * out.numberofcorners] - 1;
-            int secondVertex = out.trianglelist[i * out.numberofcorners + 1] - 1;
-            int thirdVertex = out.trianglelist[i * out.numberofcorners + 2] - 1;
-
-            DiscreteElement element;
-            element.x[0] = out.pointlist[firstVertex * 2];
-            element.y[0] = out.pointlist[firstVertex * 2 + 1];
-            element.x[1] = out.pointlist[secondVertex * 2];
-            element.y[1] = out.pointlist[secondVertex * 2 + 1];
-            element.x[2] = out.pointlist[thirdVertex * 2];
-            element.y[2] = out.pointlist[thirdVertex * 2 + 1];
-
-            vector<int> localVertices;
-            if (find(innerVertices.begin(), innerVertices.end(), firstVertex) != innerVertices.end()) {
-                localVertices.push_back(0);
+    double** FEMCalculator::M(QVector<VertexInfo>* vertices, QVector<int*> triangles) {
+        int gSize = vertices->size();
+        double** g = new double*[gSize];
+        for (int i = 0; i < gSize; i++) {
+            g[i] = new double[gSize];
+            for (int j = 0; j < gSize; j++) {
+                g[i][j] = 0.0;
             }
-            if (find(innerVertices.begin(), innerVertices.end(), secondVertex) != innerVertices.end()) {
-                localVertices.push_back(1);
-            }
-            if (find(innerVertices.begin(), innerVertices.end(), thirdVertex) != innerVertices.end()) {
-                localVertices.push_back(2);
-            }
-
-            ElementMatrix elementMatrix = m(element, localVertices);
-            elementMatrix.globalIndices[0] = firstVertex;
-            elementMatrix.globalIndices[1] = secondVertex;
-            elementMatrix.globalIndices[2] = thirdVertex;
-
-            globalMatrix.merge(elementMatrix, localVertices);
-
-#ifdef INTCALC_DEBUG
-            if (out.numberoftriangles <= 100) {
-                cout << endl << "Triangle #" << i << endl;
-                cout << firstVertex << ": (" << element.x[0] << ", " << element.y[0] << "); "
-                     << secondVertex << ": (" << element.x[1] << ", " << element.y[1] << "); "
-                     << thirdVertex << ": (" << element.x[2] << ", " << element.y[2] << ");"
-                     << endl;
-                cout << "Element matrix:" << endl;
-                cout << elementMatrix.data[0][0] << "\t" << elementMatrix.data[0][1] << "\t" << elementMatrix.data[0][2] << endl
-                     << elementMatrix.data[1][0] << "\t" << elementMatrix.data[1][1] << "\t" << elementMatrix.data[1][2] << endl
-                     << elementMatrix.data[2][0] << "\t" << elementMatrix.data[2][1] << "\t" << elementMatrix.data[2][2] << endl;
-            }
-#endif
         }
 
-#ifdef INTCALC_DEBUG
-            if (out.numberoftriangles <= 100) {
-                cout << "Size: " << globalMatrix.getSize() << endl
-                     << "triangle count: " << out.numberoftriangles << endl
-                     << "vertex count: " << out.numberofedges << endl;
-                cout << endl << "(=) Global matrix:" << endl;
-                for (int i = 0; i < globalMatrix.getSize(); i++) {
-                    for (int j = 0; j < globalMatrix.getSize(); j++) {
-                        cout << globalMatrix.getAtNormal(i, j) << ", ";
-                    }
-                    cout << endl;
-                }
+        for (unsigned int i = 0; i < triangles.size(); i++) {
+            const int* triangle = triangles[i];
+            DiscreteElement el;
+            el.v[0] = &vertices->at(triangle[0]);
+            el.v[1] = &vertices->at(triangle[1]);
+            el.v[2] = &vertices->at(triangle[2]);
+            m(g, el, triangle);
+        }
+
+        return g;
+    }
+
+    QVector<VertexInfo>* prepareDiscreteVerticies(triangulateio& out, Region& regionOfStudy, Region& gamma2) {
+        QVector<VertexInfo>* vertices = new QVector<VertexInfo>();
+        for (int i = 0; i < out.numberofpoints; i++) {
+            double x = out.pointlist[i * 2];
+            double y = out.pointlist[i * 2 + 1];
+            VertexInfo vertex(x, y, i);
+            if (!regionOfStudy.hasVertexOnContour(vertex)) {
+                vertex.setType(VertexInfo::Type::INNER);
+            } else if (gamma2.hasVertexOnContour(vertex)) {
+                vertex.setType(VertexInfo::Type::GAMMA_2);
+            } else {
+                vertex.setType(VertexInfo::Type::GAMMA_1);
             }
+            vertices->push_back(vertex);
+        }
+        return vertices;
+    }
 
-#endif
+    QVector<int*> prepareTrianglesVector(const triangulateio& out) {
+        QVector<int*> triangles;
+        for (int i = 0; i < out.numberoftriangles * out.numberofcorners; i += out.numberofcorners) {
+            triangles.push_back(new int[out.numberofcorners] {
+                out.trianglelist[i] - 1,
+                out.trianglelist[i + 1] - 1,
+                out.trianglelist[i + 2] - 1
+            });
+        }
+        return triangles;
+    }
 
-        return globalMatrix;
+    Eigen::MatrixXd solveMatrix(double** g, QVector<VertexInfo>* vertices, std::function<double(const VertexInfo&)> f) {
+        vector<int> nonGamma1;
+        for (int i = 0; i < vertices->size(); i++) {
+            if (vertices->at(i).type == VertexInfo::Type::GAMMA_1) {
+                continue;
+            }
+            nonGamma1.push_back(i);
+        }
+
+        Eigen::MatrixXd a(nonGamma1.size(), nonGamma1.size());
+        Eigen::MatrixXd b(nonGamma1.size(), 1);
+        int localI = 0;
+        int localJ = 0;
+        for (auto i : nonGamma1) {
+            localJ = 0;
+            for (auto j : nonGamma1) {
+                a(localI, localJ) = g[i][j];
+                localJ++;
+            }
+            b(localI, 0) = f(vertices->at(i));
+            localI++;
+        }
+
+        return a.fullPivLu().solve(b);
+    }
+
+    CalcSolution FEMCalculator::solve() {
+        requireDataNotNull();
+
+        triangulateio out = intcalc_utils::doTriangulate(_triangulationSwitches, _regionOfStudy);
+
+        QVector<VertexInfo>* vertices = prepareDiscreteVerticies(out, _regionOfStudy, _gamma2);
+        QVector<int*> triangles = prepareTrianglesVector(out);
+
+        double** g = M(vertices, triangles);
+
+        Eigen::MatrixXd solutionMatrix = solveMatrix(g, vertices, _f);
+
+        CalcSolution solution;
+        int solIndex = 0;
+        for (auto vertex : *vertices) {
+            Point2DValue resultVertex;
+            resultVertex.x = vertex.x;
+            resultVertex.y = vertex.y;
+            resultVertex.value = 0;
+            if (vertex.type != VertexInfo::Type::GAMMA_1) {
+                resultVertex.value = solutionMatrix(solIndex, 0);
+                solIndex++;
+            }
+            solution.vertices.push_back(resultVertex);
+        }
+
+        for (int i = 0; i < out.numberoftriangles; i++) {
+            solution.triangleIndices.push_back(triangles[i][0]);
+            solution.triangleIndices.push_back(triangles[i][1]);
+            solution.triangleIndices.push_back(triangles[i][2]);
+        }
+
+        // clear resources
+        free(out.trianglelist);
+        free(out.pointlist);
+        for (auto triangle : triangles) {
+            delete triangle;
+        }
+
+        return solution;
     }
 
     void FEMCalculator::requireDataNotNull() {
-        if (beta == nullptr || f == nullptr) {
+        if (_beta == nullptr || _f == nullptr) {
             throw "Functions not specified!";
         }
 
-        if (points == nullptr) {
-            throw "Can't calculate result, points not provided";
+        if (_regionOfStudy.points() == nullptr) {
+            throw "Can't calculate result, regionOfStudy not provided";
         }
     }
 }

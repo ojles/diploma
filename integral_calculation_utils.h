@@ -25,6 +25,12 @@ namespace intcalc_utils
 
     // solve global matrix using Eigen library
     Eigen::MatrixXd solveGlobalMatrix(intcalc::GlobalMatrix& matrix, vector<double>& fValues);
+
+    // wrapper function for triangulation
+    triangulateio doTriangulate(QString triangulationSwitches, intcalc::Region& regionOfStudy);
+
+    // remove those points from triPoints that are on the line
+    vector<int> filterTriPointsOnLine(vector<intcalc::Vector2d>* line, vector<int> triPoints, triangulateio out);
 }
 
 #endif // INTEGRAL_CALCULATION_UTILS_H
