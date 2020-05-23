@@ -155,8 +155,12 @@ void CalculationResultComponent::doCalculate() {
         return result;
     });
 
-    intcalc::CalcSolution solution = femCalculator.solve();
-    acceptFEMSolution(solution);
+    try {
+        intcalc::CalcSolution solution = femCalculator.solve();
+        acceptFEMSolution(solution);
+    } catch(const char* e) {
+        qCritical() << e;
+    }
 
     // clean resources
     delete inputPoints;

@@ -2,6 +2,8 @@
 
 #include <math.h>
 #include <algorithm>
+#include <QDebug>
+#include <QElapsedTimer>
 
 #include "integral_calculation_utils.h"
 
@@ -213,6 +215,10 @@ namespace intcalc {
             nonGamma1.push_back(i);
         }
 
+        if (nonGamma1.size() <= 0) {
+            throw "Triangulation to small, no inner vertices found!";
+        }
+
         Eigen::MatrixXd a(nonGamma1.size(), nonGamma1.size());
         Eigen::MatrixXd b(nonGamma1.size(), 1);
         int localI = 0;
@@ -231,18 +237,34 @@ namespace intcalc {
     }
 
     CalcSolution FEMCalculator::solve() {
+        QElapsedTimer timer;
+        timer.start();
+        qInfo() << "";
+        qInfo() << "Star calculations...";
+        qInfo() << "Received parameters:";
+        qInfo() << "-- mu: " << _mu;
+        qInfo() << "-- sigma: " << _sigma;
+        qInfo() << "-- alpha: " << _alpha;
+        qInfo() << "-- riangulation switches: " << _triangulationSwitches;
+
         requireDataNotNull();
 
         triangulateio out = intcalc_utils::doTriangulate(_triangulationSwitches, _regionOfStudy);
+        qInfo() << "Finish triangulation (" << timer.restart() << "ms )";
+        qInfo() << "--- numberofverticies: " << out.numberofpoints;
+        qInfo() << "--- numberoftriangles: " << out.numberoftriangles;
 
         QVector<VertexInfo>* vertices = prepareDiscreteVerticies(out);
         QVector<int*> triangles = prepareTrianglesVector(out);
+        qInfo() << "Prepared verticies (" << timer.restart() << "ms )";
 
         double** g = M(vertices, triangles);
+        qInfo() << "Calculated global matrix M (" << timer.restart() << "ms )";
 
         Eigen::MatrixXd solutionMatrix = solveMatrix(g, vertices, [](const VertexInfo& vertex) ->double {
             return vertex.isInConservacyArea() ? 1 : 0;
         });
+        qInfo() << "Solved Au=f (" << timer.restart() << "ms )";
 
         CalcSolution solution;
         int solIndex = 0;
@@ -270,6 +292,8 @@ namespace intcalc {
         for (auto triangle : triangles) {
             delete triangle;
         }
+
+        qInfo() << "Displayed result (" << timer.restart() << "ms )";
 
         return solution;
     }

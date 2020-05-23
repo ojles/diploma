@@ -1,6 +1,6 @@
-import QtQuick 2.0
+import QtQuick 2.12
 import QtQuick.Layouts 1.12
-import QtQuick.Controls 2.12
+import QtQuick.Controls 2.14
 
 // TODO: limit triangulation to certain number of triangles
 Rectangle {
@@ -17,10 +17,21 @@ Rectangle {
     property string alpha: alphaTextField.text
 
     color: '#f2f2f2'
-    ScrollView {
+
+    Flickable {
         anchors.fill: parent
+        contentHeight: cpanel.height
+        contentWidth: parent.width
+        flickableDirection: Flickable.VerticalFlick
+        flickDeceleration: 5000
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AsNeeded
+            snapMode: ScrollBar.SnapAlways
+        }
+
         ColumnLayout {
-            anchors.fill: parent
+            id: cpanel
+            width: parent.parent.width - 6
             CheckBox {
                 id: showBetaVectorFieldCheckbox
                 text: qsTr("Show beta vector field")
@@ -49,6 +60,7 @@ Rectangle {
                 id: muTextField
                 text: "0.1"
                 Layout.leftMargin: 6
+                Layout.fillWidth: true
                 validator: DoubleValidator {}
             }
             Text {
@@ -59,6 +71,7 @@ Rectangle {
                 id: sigmaTextField
                 text: "1.0"
                 Layout.leftMargin: 6
+                Layout.fillWidth: true
                 validator: DoubleValidator {}
             }
             Text {
@@ -69,6 +82,7 @@ Rectangle {
                 id: alphaTextField
                 text: "1.0"
                 Layout.leftMargin: 6
+                Layout.fillWidth: true
                 validator: DoubleValidator {}
             }
             Button {
