@@ -2,12 +2,19 @@
 #define INTEGRAL_CALCULATION_H
 
 #include <math.h>
-#include <eigen3/Eigen/Geometry>
+#include <viennacl/matrix.hpp>
+#include <viennacl/vector.hpp>
+#include <viennacl/linalg/lu.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
 #include <limits>
 
 #include "triangulate.h"
 
 using std::pair;
+
+using viennacl::linalg::lu_factorize;
+using viennacl::linalg::lu_substitute;
+using namespace boost::numeric;
 
 namespace intcalc {
     struct Vector2d {
