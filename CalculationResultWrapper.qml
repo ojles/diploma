@@ -21,7 +21,7 @@ CalculationResult {
     function calculate() {
         _updatePositionOnMap();
         updateDimensions(true);
-        doCalculate();
+        return doCalculate();
     }
 
     function updateDimensions(force) {

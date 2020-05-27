@@ -38,14 +38,24 @@ ApplicationWindow {
             SplitView.fillWidth: true
 
             LvivMap {
+                id: map
+
                 readonly property var omegaPolylineComponent: Qt.createComponent('Omega.qml')
+                readonly property var polutionSourceMarkerComponent: Qt.createComponent('PolutionSourceMapMarker.qml')
                 readonly property var omegaPolylines: []
+                readonly property var circles: []
+                readonly property int circlesAmount: 15
                 property var currentPolyline: regionOfStudy
                 property bool dataReadyForCalculation: false
 
                 SplitView.fillHeight: true
 
-                id: map
+                Component.onCompleted: {
+                    for (var i = 0; i < circlesAmount; i++) {
+                        circles[i] = polutionSourceMarkerComponent.createObject(map);
+                        map.addMapItem(circles[i]);
+                    }
+                }
 
                 onCenterChanged: {
                     betaVectorField.redraw();
@@ -176,13 +186,18 @@ ApplicationWindow {
 
                     currentPolyline = regionOfStudy;
                     calculationResult.clear();
+
+                    circles.forEach(circle => circle.hide());
                 }
 
                 function triggerCalculation() {
                     if (!dataReadyForCalculation) {
                         return;
                     }
-                    calculationResult.calculate();
+                    var minPoints = calculationResult.calculate();
+                    for (var i = 0; i < Math.min(minPoints.length, circlesAmount); i++) {
+                        circles[i].show(minPoints[i]);
+                    }
                 }
             }
 

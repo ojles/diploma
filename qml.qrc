@@ -14,5 +14,6 @@
         <file>shader/Fragment.shader</file>
         <file>CalculationResultWrapper.qml</file>
         <file>MessageBox.qml</file>
+        <file>PolutionSourceMapMarker.qml</file>
     </qresource>
 </RCC>

@@ -127,7 +127,7 @@ QVector<intcalc::Vector2d>* retrievePointsFromMapPolyline(QVariant path, int min
     return points;
 }
 
-void CalculationResultComponent::doCalculate() {
+QVariant CalculationResultComponent::doCalculate() {
     QVector<intcalc::Vector2d>* inputPoints = retrievePointsFromMapPolyline(_regionOfStudy->property("path"), 3);
     QVector<intcalc::Vector2d>* gamma2 = retrievePointsFromMapPolyline(_gamma2->property("path"), 2);
     QVector<QVector<intcalc::Vector2d>*> conservacyAreas;
@@ -150,16 +150,41 @@ void CalculationResultComponent::doCalculate() {
     femCalculator.setBeta([](const intcalc::Vector2d& vertex) -> intcalc::Vector2d {
         Q_UNUSED(vertex);
         intcalc::Vector2d result;
-        result.x = 10;
+        result.x = -10;
         result.y = 0;
         return result;
     });
 
+     QList<QGeoCoordinate> resCoords;
     try {
         intcalc::CalcSolution solution = femCalculator.solve();
+
+        intcalc::Point2DValue minPoint;
+        for (int i = 0; i < solution.vertices.size(); i++) {
+            if (!solution.vertices[i].isOnContour) {
+                minPoint.value = solution.vertices[i].value;
+                break;
+            }
+        }
+        for (const intcalc::Point2DValue& vertex : solution.vertices) {
+            if (vertex.value < minPoint.value && !vertex.isOnContour) {
+                minPoint.value = vertex.value;
+            }
+        }
+        for (const intcalc::Point2DValue& vertex : solution.vertices) {
+            if (minPoint.value == vertex.value && !vertex.isOnContour) {
+                double longitude = vertex.x;
+                double latitude = vertex.y;
+                resCoords.push_back(QGeoCoordinate(latitude, longitude));
+            }
+        }
+
         acceptFEMSolution(solution);
+
+        qInfo() << "Min points: " << resCoords.size();
     } catch(const char* e) {
         qCritical() << e;
+        return QVariant::fromValue(nullptr);
     }
 
     // clean resources
@@ -168,6 +193,8 @@ void CalculationResultComponent::doCalculate() {
     for (auto area : conservacyAreas) {
         delete area;
     }
+
+    return QVariant::fromValue(resCoords);
 }
 
 void CalculationResultComponent::clear() {
@@ -216,10 +243,10 @@ void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& soluti
     vertices->clear();
     colors->clear();
     indices->clear();
-    for (int i = 0; i < solution.vertices.size(); i++) {
-        float x = static_cast<float>((solution.vertices[i].x - bottomLeft.x) * xScaler - 1);
-        float y = static_cast<float>((solution.vertices[i].y - bottomLeft.y) * yScaler - 1);
-        float color = static_cast<float>((solution.vertices[i].value - bottomLeft.value) * colorScaler);
+    for (auto vertex : solution.vertices) {
+        float x = static_cast<float>((vertex.x - bottomLeft.x) * xScaler - 1);
+        float y = static_cast<float>((vertex.y - bottomLeft.y) * yScaler - 1);
+        float color = static_cast<float>((vertex.value - bottomLeft.value) * colorScaler);
         *vertices << QVector2D(x, y);
         *colors << QVector4D(color, color, color, 0.8f);
     }

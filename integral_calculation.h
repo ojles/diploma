@@ -280,15 +280,17 @@ namespace intcalc {
         double x;
         double y;
         double value;
+        bool isOnContour;
 
         Point2DValue()
-            : x(0.0), y(0.0), value(0.0) {
+            : x(0.0), y(0.0), value(0.0), isOnContour(true) {
         }
     };
 
     struct CalcSolution {
         QVector<Point2DValue> vertices;
         QVector<int> triangleIndices;
+        QVector<Point2DValue> minVertices;
     };
 
     class FEMCalculator {

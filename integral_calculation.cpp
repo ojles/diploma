@@ -216,6 +216,7 @@ namespace intcalc {
         }
 
         if (nonGamma1.size() <= 0) {
+            qCritical() << "Non gamma: " << nonGamma1.size();
             throw "Triangulation to small, no inner vertices found!";
         }
 
@@ -285,6 +286,9 @@ namespace intcalc {
             if (vertex.type() != VertexInfo::Type::GAMMA_1) {
                 resultVertex.value = solutionMatrix(solIndex);
                 solIndex++;
+            }
+            if (vertex.type() == VertexInfo::Type::INNER) {
+                resultVertex.isOnContour = false;
             }
             solution.vertices.push_back(resultVertex);
         }

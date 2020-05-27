@@ -50,7 +50,7 @@ public:
     void setSigma(double sigma);
     void setAlpha(double alpha);
 
-    Q_INVOKABLE void doCalculate();
+    Q_INVOKABLE QVariant doCalculate();
     Q_INVOKABLE void clear();
 
 signals:
