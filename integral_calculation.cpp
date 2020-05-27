@@ -206,7 +206,7 @@ namespace intcalc {
         return triangles;
     }
 
-    ublas::vector<double> solveMatrix(double** g, QVector<VertexInfo>* vertices, std::function<double(const VertexInfo&)> f) {
+    Eigen::MatrixXd solveMatrix(double** g, QVector<VertexInfo>* vertices, std::function<double(const VertexInfo&)> f) {
         vector<int> nonGamma1;
         for (int i = 0; i < vertices->size(); i++) {
             if (vertices->at(i).type() == VertexInfo::Type::GAMMA_1) {
@@ -220,30 +220,21 @@ namespace intcalc {
             throw "Triangulation to small, no inner vertices found!";
         }
 
-        ublas::matrix<double> g_local(nonGamma1.size(), nonGamma1.size());
-        ublas::vector<double> f_local(nonGamma1.size());
-        viennacl::matrix<double> vcl_g_local(nonGamma1.size(), nonGamma1.size());
-        viennacl::vector<double> vcl_f_local(nonGamma1.size());
-
+        Eigen::MatrixXd a(nonGamma1.size(), nonGamma1.size());
+        Eigen::MatrixXd b(nonGamma1.size(), 1);
         int localI = 0;
         int localJ = 0;
         for (auto i : nonGamma1) {
             localJ = 0;
             for (auto j : nonGamma1) {
-                g_local(localI, localJ) = g[i][j];
+                a(localI, localJ) = g[i][j];
                 localJ++;
             }
-            f_local(localI) = f(vertices->at(i));
+            b(localI, 0) = f(vertices->at(i));
             localI++;
         }
 
-        viennacl::copy(g_local, vcl_g_local);
-        viennacl::copy(f_local, vcl_f_local);
-        lu_factorize(vcl_g_local);
-        lu_substitute(vcl_g_local, vcl_f_local);
-        viennacl::copy(vcl_f_local, f_local);
-
-        return f_local;
+        return a.fullPivLu().solve(b);
     }
 
     CalcSolution FEMCalculator::solve() {
@@ -271,7 +262,7 @@ namespace intcalc {
         double** g = M(vertices, triangles);
         qInfo() << "Calculated global matrix M (" << timer.restart() << "ms )";
 
-        ublas::vector<double> solutionMatrix = solveMatrix(g, vertices, [](const VertexInfo& vertex) ->double {
+        Eigen::MatrixXd solutionMatrix = solveMatrix(g, vertices, [](const VertexInfo& vertex) ->double {
             return vertex.isInConservacyArea() ? 1 : 0;
         });
         qInfo() << "Solved Au=f (" << timer.restart() << "ms )";
@@ -284,7 +275,7 @@ namespace intcalc {
             resultVertex.y = vertex.y;
             resultVertex.value = 0;
             if (vertex.type() != VertexInfo::Type::GAMMA_1) {
-                resultVertex.value = solutionMatrix(solIndex);
+                resultVertex.value = solutionMatrix(solIndex, 0);
                 solIndex++;
             }
             if (vertex.type() == VertexInfo::Type::INNER) {
