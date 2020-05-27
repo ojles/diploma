@@ -294,6 +294,8 @@ namespace intcalc {
         }
 
         qInfo() << "Displayed result (" << timer.restart() << "ms )";
+        qInfo() << "End.";
+        qInfo() << "";
 
         return solution;
     }

@@ -5,7 +5,7 @@ Flickable {
     id: flick
     contentWidth: textEdit.paintedWidth
     contentHeight: textEdit.paintedHeight
-    flickDeceleration: 5000
+    flickDeceleration: 7000
     flickableDirection: Flickable.VerticalFlick
     clip: true
     ScrollBar.vertical: ScrollBar {
