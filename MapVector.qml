@@ -6,7 +6,8 @@ MapPolygon {
     readonly property real arrowWidthToVectorLength: 0.15;
 
     border {
-        width: 0
+        width: 1
+        color: "gray"
     }
 
     function draw(lt1, lg1, lt2, lg2, hue) {

@@ -84,12 +84,8 @@ ApplicationWindow {
                     map: map
                     origin: map.lvivCoordinates
                     show: controlPanel.showBetaVectorField
-                    xx: function(x, y) {
-                        return controlPanel.windX;
-                    }
-                    yy: function(x, y) {
-                        return controlPanel.windY;
-                    }
+                    xx: controlPanel.windX;
+                    yy: controlPanel.windY;
                 }
 
                 MapQuickItem {

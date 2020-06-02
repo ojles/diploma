@@ -18,8 +18,8 @@ MapItemGroup {
     property var origin;
     property bool show;
 
-    readonly property real _scaleValue: 0.1;
-    readonly property real _hueScaleValue: 1600;
+    readonly property real _scaleValue: 0.005;
+    readonly property real _hueScaleValue: 800;
     readonly property int _vectorDensityInPixels: 60;
     readonly property var _vectors: [];
     readonly property var _mapVectorComponent: Qt.createComponent("MapVector.qml");
@@ -31,6 +31,14 @@ MapItemGroup {
             betaVectorTimer.stop();
             clear();
         }
+    }
+
+    onXxChanged: {
+        redraw();
+    }
+
+    onYyChanged: {
+        redraw();
     }
 
     function redraw() {
@@ -68,8 +76,8 @@ MapItemGroup {
 
     function _calculateVectorCoordinates(lg0, lt0) {
         return {
-            lg1: xx(lg0 - origin.longitude, lt0 - origin.latitude) * _scaleValue,
-            lt1: yy(lg0 - origin.longitude, lt0 - origin.latitude) * _scaleValue
+            lg1: xx * _scaleValue,
+            lt1: yy * _scaleValue
         };
     }
 
