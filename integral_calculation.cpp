@@ -15,8 +15,7 @@ using std::endl;
 #endif
 
 namespace intcalc {
-    FEMCalculator::FEMCalculator()
-        : _beta(nullptr) {
+    FEMCalculator::FEMCalculator() {
     }
 
     double jacobian(const DiscreteElement& el) {
@@ -85,12 +84,12 @@ namespace intcalc {
     }
 
     double FEMCalculator::b(Vector2d edgeCenter) {
-        return _alpha - _beta(edgeCenter) * n(edgeCenter);
+        return _alpha - _beta * n(edgeCenter);
     }
 
     double FEMCalculator::m_ij(int i, int j, const DiscreteElement& el, vector<int>& edges) {
         double result = _mu * firstIntegral(i, j, el)
-                + _beta(*el.v[0]) * secondIntegral(j, el)
+                + _beta * secondIntegral(j, el)
                 + _sigma * thirdIntegral(i, j, el);
 
         for (unsigned int k = 0; k < edges.size(); k++) {
@@ -305,10 +304,6 @@ namespace intcalc {
     }
 
     void FEMCalculator::requireDataNotNull() {
-        if (_beta == nullptr) {
-            throw "Beta not specified!";
-        }
-
         if (_regionOfStudy.points() == nullptr) {
             throw "Can't calculate result, regionOfStudy not provided";
         }

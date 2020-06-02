@@ -11,6 +11,8 @@ Rectangle {
     property bool showBetaVectorField: showBetaVectorFieldCheckbox.checked;
     property bool showTriangulation: showTriangulationCheckbox.checked;
     property bool calculateGamma2: calculateGamma2CheckBox.checked;
+    property string windX: windDirectionX.text;
+    property string windY: windDirectionY.text;
     property string triangulationSwitches: triangulationSwitchesTextField.text
     property string mu: muTextField.text
     property string sigma: sigmaTextField.text
@@ -32,10 +34,51 @@ Rectangle {
         ColumnLayout {
             id: cpanel
             width: parent.parent.width - 6
-            CheckBox {
-                id: showBetaVectorFieldCheckbox
-                text: qsTr("Show beta vector field")
+
+            GroupBox {
+                title: qsTr("Wind direction")
+                padding: 9
+                Layout.fillWidth: true
+                Layout.leftMargin: 6
+                Layout.topMargin: 8
+                ColumnLayout {
+                    anchors.fill: parent
+                    id: windDirectionGroupRootLayout
+                    CheckBox {
+                        id: showBetaVectorFieldCheckbox
+                        text: qsTr("Show wind direction")
+                    }
+                    RowLayout {
+                        ColumnLayout {
+                            Text {
+                                text: "x:"
+                                Layout.leftMargin: 5
+                            }
+                            TextField {
+                                id: windDirectionX
+                                text: "5"
+                                placeholderText: "x"
+                                implicitWidth: windDirectionGroupRootLayout.width / 2 - 3
+                                validator: DoubleValidator {}
+                            }
+                        }
+                        ColumnLayout {
+                            Text {
+                                text: "y:"
+                                Layout.leftMargin: 5
+                            }
+                            TextField {
+                                id: windDirectionY
+                                text: "3"
+                                placeholderText: "y"
+                                implicitWidth: windDirectionGroupRootLayout.width / 2 - 3
+                                validator: DoubleValidator {}
+                            }
+                        }
+                    }
+                }
             }
+
             CheckBox {
                 id: showTriangulationCheckbox
                 text: qsTr("Show triangulation")
@@ -47,11 +90,13 @@ Rectangle {
                 Layout.leftMargin: 6
                 Layout.fillWidth: true
             }
+
             CheckBox {
                 id: calculateGamma2CheckBox
                 Layout.topMargin: 15
                 text: qsTr("Second boundary condition")
             }
+
             Text {
                 text: qsTr("Mu:")
                 Layout.leftMargin: 6
@@ -63,6 +108,7 @@ Rectangle {
                 Layout.fillWidth: true
                 validator: DoubleValidator {}
             }
+
             Text {
                 text: qsTr("Sigma:")
                 Layout.leftMargin: 6
@@ -74,6 +120,7 @@ Rectangle {
                 Layout.fillWidth: true
                 validator: DoubleValidator {}
             }
+
             Text {
                 text: qsTr("Alpha:")
                 Layout.leftMargin: 6
@@ -85,6 +132,7 @@ Rectangle {
                 Layout.fillWidth: true
                 validator: DoubleValidator {}
             }
+
             Button {
                 text: qsTr("Restart")
                 Layout.leftMargin: 6
@@ -94,6 +142,7 @@ Rectangle {
                     onRestart();
                 }
             }
+
             Button {
                 text: qsTr("Calculate")
                 enabled: readyToCalculate

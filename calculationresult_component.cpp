@@ -39,7 +39,7 @@ QVariant CalculationResultComponent::doCalculate() {
     femCalculator.setMu(_mu);
     femCalculator.setSigma(_sigma);
     femCalculator.setAlpha(_alpha);
-    femCalculator.setBeta(-10, 0);
+    femCalculator.setBeta(_windX, _windY);
 
     QList<QGeoCoordinate> resCoords;
     try {

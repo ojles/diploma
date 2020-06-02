@@ -17,9 +17,9 @@ class CalculationResultComponent : public QQuickFramebufferObject {
     Q_PROPERTY(QObject* regionOfStudy READ regionOfStudy WRITE setRegionOfStudy NOTIFY regionOfStudyChanged)
     Q_PROPERTY(QObject* gamma2 READ gamma2 WRITE setGamma2 NOTIFY gamma2Changed)
     Q_PROPERTY(QJSValue conservacyAreas READ conservacyAreas WRITE setConservacyAreas NOTIFY conservacyAreasChanged)
+    Q_PROPERTY(bool calculateGamma2 READ calculateGamma2 WRITE setCalculateGamma2 NOTIFY calculateGamma2Changed)
     Q_PROPERTY(double windX READ windX WRITE setWindX NOTIFY windXChanged)
     Q_PROPERTY(double windY READ windY WRITE setWindY NOTIFY windYChanged)
-    Q_PROPERTY(bool calculateGamma2 READ calculateGamma2 WRITE setCalculateGamma2 NOTIFY calculateGamma2Changed)
     Q_PROPERTY(double mu READ mu WRITE setMu NOTIFY muChanged)
     Q_PROPERTY(double sigma READ sigma WRITE setSigma NOTIFY sigmaChanged)
     Q_PROPERTY(double alpha READ alpha WRITE setAlpha NOTIFY alphaChanged)
@@ -65,6 +65,14 @@ public:
 
     bool calculateGamma2() {
         return _calculateGamma2;
+    }
+
+    double windX() {
+        return _windX;
+    }
+
+    double windY() {
+        return _windY;
     }
 
     double mu() {
@@ -113,6 +121,16 @@ public:
         emit calculateGamma2Changed();
     }
 
+    void setWindX(double windX) {
+        _windX = windX;
+        emit windXChanged();
+    }
+
+    void setWindY(double windY) {
+        _windY = windY;
+        emit windYChanged();
+    }
+
     void setMu(double mu) {
         _mu = mu;
         emit muChanged();
@@ -138,6 +156,8 @@ signals:
     void gamma2Changed();
     void conservacyAreasChanged();
     void calculateGamma2Changed();
+    void windXChanged();
+    void windYChanged();
     void muChanged();
     void sigmaChanged();
     void alphaChanged();
@@ -157,6 +177,8 @@ private:
     QObject* _gamma2;
     QJSValue _conservacyAreas;
     bool _calculateGamma2;
+    double _windX;
+    double _windY;
     double _mu;
     double _sigma;
     double _alpha;

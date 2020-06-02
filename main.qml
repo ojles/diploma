@@ -85,10 +85,10 @@ ApplicationWindow {
                     origin: map.lvivCoordinates
                     show: controlPanel.showBetaVectorField
                     xx: function(x, y) {
-                        return x;
+                        return controlPanel.windX;
                     }
                     yy: function(x, y) {
-                        return y;
+                        return controlPanel.windY;
                     }
                 }
 
@@ -107,6 +107,8 @@ ApplicationWindow {
                             triangulationSwitches: controlPanel.triangulationSwitches
                             showTriangulation: controlPanel.showTriangulation
                             calculateGamma2: controlPanel.calculateGamma2
+                            windX: controlPanel.windX
+                            windY: controlPanel.windY
                             mu: controlPanel.mu
                             sigma: controlPanel.sigma
                             alpha: controlPanel.alpha

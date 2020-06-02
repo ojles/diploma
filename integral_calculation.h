@@ -14,7 +14,7 @@ namespace intcalc {
         double x;
         double y;
 
-        Vector2d() {
+        Vector2d() : Vector2d(0, 0) {
         }
 
         Vector2d(double x, double y) : x(x), y(y) {
@@ -315,8 +315,8 @@ namespace intcalc {
             _alpha = alpha;
         }
 
-        void setBeta(Vector2d (*beta)(const Vector2d& vertex)) {
-            _beta = beta;
+        void setBeta(double x, double y) {
+            _beta = Vector2d(x, y);
         }
 
         void setSigma(double sigma) {
@@ -342,7 +342,7 @@ namespace intcalc {
         double _mu;
         double _alpha;
         double _sigma;
-        std::function<Vector2d(const Vector2d&)> _beta;
+        Vector2d _beta;
         QString _triangulationSwitches;
     };
 }
