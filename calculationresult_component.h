@@ -17,6 +17,8 @@ class CalculationResultComponent : public QQuickFramebufferObject {
     Q_PROPERTY(QObject* regionOfStudy READ regionOfStudy WRITE setRegionOfStudy NOTIFY regionOfStudyChanged)
     Q_PROPERTY(QObject* gamma2 READ gamma2 WRITE setGamma2 NOTIFY gamma2Changed)
     Q_PROPERTY(QJSValue conservacyAreas READ conservacyAreas WRITE setConservacyAreas NOTIFY conservacyAreasChanged)
+    Q_PROPERTY(double windX READ windX WRITE setWindX NOTIFY windXChanged)
+    Q_PROPERTY(double windY READ windY WRITE setWindY NOTIFY windYChanged)
     Q_PROPERTY(bool calculateGamma2 READ calculateGamma2 WRITE setCalculateGamma2 NOTIFY calculateGamma2Changed)
     Q_PROPERTY(double mu READ mu WRITE setMu NOTIFY muChanged)
     Q_PROPERTY(double sigma READ sigma WRITE setSigma NOTIFY sigmaChanged)
@@ -24,31 +26,107 @@ class CalculationResultComponent : public QQuickFramebufferObject {
     Q_PROPERTY(bool hasData READ hasData NOTIFY hasDataChanged)
 
 public:
-    CalculationResultComponent();
-    ~CalculationResultComponent();
+    CalculationResultComponent()
+        : vertices(new QVector<QVector2D>()),
+          colors(new QVector<QVector4D>()),
+          indices(new QVector<unsigned int>()),
+          dataChanged(new bool(false)),
+          _showTriangulation(new bool(false)),
+          _regionOfStudy(nullptr),
+          _gamma2(nullptr) {
+    }
+
+    ~CalculationResultComponent() {
+        delete vertices;
+        delete colors;
+    }
 
     Renderer *createRenderer() const override;
 
-    QString triangulationSwitches();
-    bool showTriangulation();
-    QObject* regionOfStudy();
-    QObject* gamma2();
-    QJSValue conservacyAreas();
-    bool calculateGamma2();
-    double mu();
-    double sigma();
-    double alpha();
-    bool hasData();
+    QString triangulationSwitches() {
+        return _triangulationSwitches;
+    }
 
-    void setTriangulationSwitches(QString triangulationSwitches);
-    void setShowTriangulation(bool showTriangulation);
-    void setRegionOfStudy(QObject* regionOfStudy);
-    void setGamma2(QObject* gamma2);
-    void setConservacyAreas(QJSValue conservacyAreas);
-    void setCalculateGamma2(bool calculateGamma2);
-    void setMu(double mu);
-    void setSigma(double sigma);
-    void setAlpha(double alpha);
+    bool showTriangulation() {
+        return *_showTriangulation;
+    }
+
+    QObject* regionOfStudy() {
+        return _regionOfStudy;
+    }
+
+    QObject* gamma2() {
+        return _gamma2;
+    }
+
+    QJSValue conservacyAreas() {
+        return _conservacyAreas;
+    }
+
+    bool calculateGamma2() {
+        return _calculateGamma2;
+    }
+
+    double mu() {
+        return _mu;
+    }
+
+    double sigma() {
+        return _sigma;
+    }
+
+    double alpha() {
+        return _alpha;
+    }
+
+    bool hasData() {
+        return _hasData;
+    }
+
+    void setTriangulationSwitches(QString triangulationSwitches) {
+        _triangulationSwitches = triangulationSwitches;
+        emit triangulationSwitchesChanged();
+    }
+
+    void setShowTriangulation(bool showTriangulation) {
+        *_showTriangulation = showTriangulation;
+        emit showTriangulationChanged();
+    }
+
+    void setRegionOfStudy(QObject* regionOfStudy) {
+        _regionOfStudy = regionOfStudy;
+        emit regionOfStudyChanged();
+    }
+
+    void setGamma2(QObject* gamma2) {
+        _gamma2 = gamma2;
+        emit gamma2Changed();
+    }
+
+    void setConservacyAreas(QJSValue conservacyAreas) {
+        _conservacyAreas = conservacyAreas;
+        emit conservacyAreasChanged();
+    }
+
+    void setCalculateGamma2(bool calculateGamma2) {
+        _calculateGamma2 = calculateGamma2;
+        emit calculateGamma2Changed();
+    }
+
+    void setMu(double mu) {
+        _mu = mu;
+        emit muChanged();
+    }
+
+    void setSigma(double sigma) {
+        _sigma = sigma;
+        emit sigmaChanged();
+    }
+
+    void setAlpha(double alpha) {
+        _alpha = alpha;
+        emit alphaChanged();
+    }
 
     Q_INVOKABLE QVariant doCalculate();
     Q_INVOKABLE void clear();

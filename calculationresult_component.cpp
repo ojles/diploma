@@ -1,116 +1,8 @@
 #include "calculationresult_component.h"
 #include "triangle_gradient_renderer.h"
 
-#ifdef INTCALC_DEBUG
-#include <iostream>
-using std::cout;
-using std::endl;
-using std::cerr;
-#endif
-
-
-CalculationResultComponent::CalculationResultComponent()
-    : vertices(new QVector<QVector2D>()),
-      colors(new QVector<QVector4D>()),
-      indices(new QVector<unsigned int>()),
-      dataChanged(new bool(false)),
-      _showTriangulation(new bool(false)),
-      _regionOfStudy(nullptr),
-      _gamma2(nullptr) {
-}
-
-CalculationResultComponent::~CalculationResultComponent() {
-    delete vertices;
-    delete colors;
-}
-
 QQuickFramebufferObject::Renderer* CalculationResultComponent::createRenderer() const {
     return new TriangleGradientRenderer(vertices, colors, indices, _showTriangulation, dataChanged);
-}
-
-QString CalculationResultComponent::triangulationSwitches() {
-    return _triangulationSwitches;
-}
-
-bool CalculationResultComponent::showTriangulation() {
-    return *_showTriangulation;
-}
-
-QObject* CalculationResultComponent::regionOfStudy() {
-    return _regionOfStudy;
-}
-
-QObject* CalculationResultComponent::gamma2() {
-    return _gamma2;
-}
-
-QJSValue CalculationResultComponent::conservacyAreas() {
-    return _conservacyAreas;
-}
-
-bool CalculationResultComponent::calculateGamma2() {
-    return _calculateGamma2;
-}
-
-double CalculationResultComponent::mu() {
-    return _mu;
-}
-
-double CalculationResultComponent::sigma() {
-    return _sigma;
-}
-
-double CalculationResultComponent::alpha() {
-    return _alpha;
-}
-
-bool CalculationResultComponent::hasData() {
-    return _hasData;
-}
-
-void CalculationResultComponent::setTriangulationSwitches(QString triangulationSwitches) {
-    _triangulationSwitches = triangulationSwitches;
-    emit triangulationSwitchesChanged();
-}
-
-void CalculationResultComponent::setShowTriangulation(bool showTriangulation) {
-    *_showTriangulation = showTriangulation;
-    emit showTriangulationChanged();
-}
-
-void CalculationResultComponent::setRegionOfStudy(QObject* regionOfStudy) {
-    _regionOfStudy = regionOfStudy;
-    emit regionOfStudyChanged();
-}
-
-void CalculationResultComponent::setGamma2(QObject* gamma2) {
-    _gamma2 = gamma2;
-    emit gamma2Changed();
-}
-
-void CalculationResultComponent::setConservacyAreas(QJSValue conservacyAreas) {
-    _conservacyAreas = conservacyAreas;
-    emit conservacyAreasChanged();
-}
-
-void CalculationResultComponent::setCalculateGamma2(bool calculateGamma2) {
-    _calculateGamma2 = calculateGamma2;
-    emit calculateGamma2Changed();
-}
-
-void CalculationResultComponent::setMu(double mu) {
-    _mu = mu;
-    emit muChanged();
-}
-
-void CalculationResultComponent::setSigma(double sigma) {
-    _sigma = sigma;
-    emit sigmaChanged();
-}
-
-void CalculationResultComponent::setAlpha(double alpha) {
-    _alpha = alpha;
-    emit alphaChanged();
 }
 
 QVector<intcalc::Vector2d>* retrievePointsFromMapPolyline(QVariant path, int minPoints) {
@@ -147,15 +39,9 @@ QVariant CalculationResultComponent::doCalculate() {
     femCalculator.setMu(_mu);
     femCalculator.setSigma(_sigma);
     femCalculator.setAlpha(_alpha);
-    femCalculator.setBeta([](const intcalc::Vector2d& vertex) -> intcalc::Vector2d {
-        Q_UNUSED(vertex);
-        intcalc::Vector2d result;
-        result.x = -10;
-        result.y = 0;
-        return result;
-    });
+    femCalculator.setBeta(-10, 0);
 
-     QList<QGeoCoordinate> resCoords;
+    QList<QGeoCoordinate> resCoords;
     try {
         intcalc::CalcSolution solution = femCalculator.solve();
 
