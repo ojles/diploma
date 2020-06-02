@@ -236,6 +236,9 @@ void CalculationResultComponent::acceptFEMSolution(intcalc::CalcSolution& soluti
         }
     }
 
+    qInfo() << "---Min value: " << bottomLeft.value;
+    qInfo() << "---Max value: " << topRight.value;
+
     double xScaler = 2 / (topRight.x - bottomLeft.x);
     double yScaler = 2 / (topRight.y - bottomLeft.y);
     double colorScaler = 1 / (topRight.value - bottomLeft.value);
