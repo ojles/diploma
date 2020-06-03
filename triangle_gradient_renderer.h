@@ -5,7 +5,6 @@
 #include <QtGui/QOpenGLFramebufferObject>
 #include <QtGui/QOpenGLVertexArrayObject>
 #include <QtGui/QOpenGLBuffer>
-//#include <QtGui/QOpenGLFunctions_4_3_Core>
 #include <QtGui/qopenglshaderprogram.h>
 #include <QtGui/qopenglfunctions.h>
 
@@ -42,4 +41,4 @@ private:
     int colorAttribute;
 };
 
-#endif // CALCULATIONRESULTRENDERER_H
+#endif

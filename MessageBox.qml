@@ -37,6 +37,7 @@ Flickable {
         height: flick.height
         focus: false
         readOnly: true
+        selectByMouse: true
         wrapMode: TextEdit.Wrap
         leftPadding: 7
         rightPadding: 7
@@ -49,5 +50,4 @@ Flickable {
             cursorPosition = text.length
         }
     }
-  }
-
+}
