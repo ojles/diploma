@@ -12,7 +12,8 @@
 
 class CalculationResultComponent : public QQuickFramebufferObject {
     Q_OBJECT
-    Q_PROPERTY(QString triangulationSwitches READ triangulationSwitches WRITE setTriangulationSwitches NOTIFY triangulationSwitchesChanged)
+    Q_PROPERTY(double triMinAngle READ triMinAngle WRITE setTriMinAngle NOTIFY triMinAngleChanged)
+    Q_PROPERTY(double triMaxArea READ triMaxArea WRITE setTriMaxArea NOTIFY triMaxAreaChanged)
     Q_PROPERTY(bool showTriangulation READ showTriangulation WRITE setShowTriangulation NOTIFY showTriangulationChanged)
     Q_PROPERTY(QObject* regionOfStudy READ regionOfStudy WRITE setRegionOfStudy NOTIFY regionOfStudyChanged)
     Q_PROPERTY(QObject* gamma2 READ gamma2 WRITE setGamma2 NOTIFY gamma2Changed)
@@ -43,8 +44,12 @@ public:
 
     Renderer *createRenderer() const override;
 
-    QString triangulationSwitches() {
-        return _triangulationSwitches;
+    double triMinAngle() {
+        return _triMinAngle;
+    }
+
+    double triMaxArea() {
+        return _triMaxArea;
     }
 
     bool showTriangulation() {
@@ -91,9 +96,14 @@ public:
         return _hasData;
     }
 
-    void setTriangulationSwitches(QString triangulationSwitches) {
-        _triangulationSwitches = triangulationSwitches;
-        emit triangulationSwitchesChanged();
+    void setTriMinAngle(double minAngle) {
+        _triMinAngle = minAngle;
+        emit triMinAngleChanged();
+    }
+
+    void setTriMaxArea(double maxArea) {
+        _triMaxArea = maxArea;
+        emit triMaxAreaChanged();
     }
 
     void setShowTriangulation(bool showTriangulation) {
@@ -150,7 +160,8 @@ public:
     Q_INVOKABLE void clear();
 
 signals:
-    void triangulationSwitchesChanged();
+    void triMinAngleChanged();
+    void triMaxAreaChanged();
     void showTriangulationChanged();
     void regionOfStudyChanged();
     void gamma2Changed();
@@ -172,7 +183,8 @@ private:
     bool* dataChanged;
     bool* _showTriangulation;
 
-    QString _triangulationSwitches;
+    double _triMinAngle;
+    double _triMaxArea;
     QObject* _regionOfStudy;
     QObject* _gamma2;
     QJSValue _conservacyAreas;

@@ -35,7 +35,7 @@ QVariant CalculationResultComponent::doCalculate() {
         femCalculator.setGamma2(gamma2);
     }
     femCalculator.setConservacyAreas(conservacyAreas);
-    femCalculator.setTriangulationSwitches(_triangulationSwitches);
+    femCalculator.setTriangulationOptions(_triMinAngle, _triMaxArea);
     femCalculator.setMu(_mu);
     femCalculator.setSigma(_sigma);
     femCalculator.setAlpha(_alpha);

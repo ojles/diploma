@@ -100,7 +100,8 @@ ApplicationWindow {
                             regionOfStudy: regionOfStudy
                             gamma2: gamma2
                             conservacyAreas: map.omegaPolylines
-                            triangulationSwitches: controlPanel.triangulationSwitches
+                            triMinAngle: controlPanel.triMinAngle
+                            triMaxArea: controlPanel.triMaxArea
                             showTriangulation: controlPanel.showTriangulation
                             calculateGamma2: controlPanel.calculateGamma2
                             windX: controlPanel.windX

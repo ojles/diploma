@@ -197,9 +197,9 @@ namespace intcalc {
         QVector<int*> triangles;
         for (int i = 0; i < out.numberoftriangles * out.numberofcorners; i += out.numberofcorners) {
             triangles.push_back(new int[out.numberofcorners] {
-                out.trianglelist[i] - 1,
-                out.trianglelist[i + 1] - 1,
-                out.trianglelist[i + 2] - 1
+                out.trianglelist[i],
+                out.trianglelist[i + 1],
+                out.trianglelist[i + 2]
             });
         }
         return triangles;

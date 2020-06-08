@@ -4,6 +4,7 @@
 #include <math.h>
 #include <eigen3/Eigen/Geometry>
 #include <limits>
+#include <QDebug>
 
 #include "triangulate.h"
 
@@ -323,8 +324,10 @@ namespace intcalc {
             _sigma = sigma;
         }
 
-        void setTriangulationSwitches(QString triangulationSwitches) {
-            _triangulationSwitches = triangulationSwitches;
+        void setTriangulationOptions(double minAngle, double maxArea) {
+            _triangulationSwitches = QString("zq%0a%1")
+                    .arg(minAngle)
+                    .arg(QString::number(maxArea, 'f', 10));
         }
 
     private:
