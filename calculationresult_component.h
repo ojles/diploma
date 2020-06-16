@@ -18,6 +18,7 @@ class CalculationResultComponent : public QQuickFramebufferObject {
     Q_PROPERTY(QObject* regionOfStudy READ regionOfStudy WRITE setRegionOfStudy NOTIFY regionOfStudyChanged)
     Q_PROPERTY(QObject* gamma2 READ gamma2 WRITE setGamma2 NOTIFY gamma2Changed)
     Q_PROPERTY(QJSValue conservacyAreas READ conservacyAreas WRITE setConservacyAreas NOTIFY conservacyAreasChanged)
+    Q_PROPERTY(QJSValue polutionSourceRegions READ polutionSourceRegions WRITE setPolutionSourceRegions NOTIFY polutionSourceRegionsChanged)
     Q_PROPERTY(bool calculateGamma2 READ calculateGamma2 WRITE setCalculateGamma2 NOTIFY calculateGamma2Changed)
     Q_PROPERTY(double windX READ windX WRITE setWindX NOTIFY windXChanged)
     Q_PROPERTY(double windY READ windY WRITE setWindY NOTIFY windYChanged)
@@ -66,6 +67,10 @@ public:
 
     QJSValue conservacyAreas() {
         return _conservacyAreas;
+    }
+
+    QJSValue polutionSourceRegions() {
+        return _polutionSourceRegions;
     }
 
     bool calculateGamma2() {
@@ -126,6 +131,11 @@ public:
         emit conservacyAreasChanged();
     }
 
+    void setPolutionSourceRegions(QJSValue polutionSourceRegions) {
+        _polutionSourceRegions = polutionSourceRegions;
+        emit polutionSourceRegionsChanged();
+    }
+
     void setCalculateGamma2(bool calculateGamma2) {
         _calculateGamma2 = calculateGamma2;
         emit calculateGamma2Changed();
@@ -166,6 +176,7 @@ signals:
     void regionOfStudyChanged();
     void gamma2Changed();
     void conservacyAreasChanged();
+    void polutionSourceRegionsChanged();
     void calculateGamma2Changed();
     void windXChanged();
     void windYChanged();
@@ -188,6 +199,7 @@ private:
     QObject* _regionOfStudy;
     QObject* _gamma2;
     QJSValue _conservacyAreas;
+    QJSValue _polutionSourceRegions;
     bool _calculateGamma2;
     double _windX;
     double _windY;

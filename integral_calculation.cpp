@@ -89,7 +89,7 @@ namespace intcalc {
 
     double FEMCalculator::m_ij(int i, int j, const DiscreteElement& el, vector<int>& edges) {
         double result = _mu * firstIntegral(i, j, el)
-                + _beta * secondIntegral(j, el)
+                - _beta * secondIntegral(j, el)
                 + _sigma * thirdIntegral(i, j, el);
 
         for (unsigned int k = 0; k < edges.size(); k++) {
@@ -154,7 +154,7 @@ namespace intcalc {
             }
         }
 
-        for (unsigned int i = 0; i < triangles.size(); i++) {
+        for (int i = 0; i < triangles.size(); i++) {
             const int* triangle = triangles[i];
             DiscreteElement el;
             el.v[0] = &vertices->at(triangle[0]);
@@ -182,9 +182,16 @@ namespace intcalc {
             }
 
             vertex.setIsInConservacyArea(false);
-            for (auto region : _conservacyAreas) {
-                if (region.hasVertexInside(vertex)) {
+            for (auto area : _conservacyAreas) {
+                if (area.hasVertexInside(vertex)) {
                     vertex.setIsInConservacyArea(true);
+                }
+            }
+
+            vertex.setIsInPolutionSourceRegion(false);
+            for (auto region : _polutionSourceRegions) {
+                if (region.hasVertexInside(vertex)) {
+                    vertex.setIsInPolutionSourceRegion(true);
                 }
             }
 
@@ -267,6 +274,8 @@ namespace intcalc {
         qInfo() << "Solved Au=f (" << timer.restart() << "ms )";
 
         CalcSolution solution;
+        Point2DValue minPoint;
+        minPoint.value = std::numeric_limits<double>::max();
         int solIndex = 0;
         for (auto vertex : *vertices) {
             Point2DValue resultVertex;
@@ -276,6 +285,13 @@ namespace intcalc {
             if (vertex.type() != VertexInfo::Type::GAMMA_1) {
                 resultVertex.value = solutionMatrix(solIndex, 0);
                 solIndex++;
+                if (_polutionSourceRegions.size() == 0 || vertex.isInPolutionSourceRegion()) {
+                    if (minPoint.value > resultVertex.value) {
+                        minPoint.x = resultVertex.x;
+                        minPoint.y = resultVertex.y;
+                        minPoint.value = resultVertex.value;
+                    }
+                }
             }
             if (vertex.type() == VertexInfo::Type::INNER) {
                 resultVertex.isOnContour = false;
@@ -288,6 +304,8 @@ namespace intcalc {
                 solution.triangleIndices.push_back(triangles[i][j]);
             }
         }
+
+        solution.minVertices.push_back(minPoint);
 
         // clean resources
         free(out.trianglelist);

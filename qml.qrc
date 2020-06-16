@@ -15,5 +15,7 @@
         <file>CalculationResultWrapper.qml</file>
         <file>MessageBox.qml</file>
         <file>PolutionSourceMapMarker.qml</file>
+        <file>ToggleButtom.qml</file>
+        <file>PolutionSourceRegion.qml</file>
     </qresource>
 </RCC>

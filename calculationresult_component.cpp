@@ -23,10 +23,17 @@ QVariant CalculationResultComponent::doCalculate() {
     QVector<intcalc::Vector2d>* inputPoints = retrievePointsFromMapPolyline(_regionOfStudy->property("path"), 3);
     QVector<intcalc::Vector2d>* gamma2 = retrievePointsFromMapPolyline(_gamma2->property("path"), 2);
     QVector<QVector<intcalc::Vector2d>*> conservacyAreas;
-    int areaCount = _conservacyAreas.property("length").toInt() - 1;
+    int areaCount = _conservacyAreas.property("length").toInt();
     for (int i = 0; i < areaCount; i++) {
         QVariant path = _conservacyAreas.property(i).property("path").toVariant();
         conservacyAreas.push_back(retrievePointsFromMapPolyline(path, 3));
+    }
+
+    QVector<QVector<intcalc::Vector2d>*> polutionSourceRegions;
+    int regionsCount = _polutionSourceRegions.property("length").toInt();
+    for (int i = 0; i < regionsCount; i++) {
+        QVariant path = _polutionSourceRegions.property(i).property("path").toVariant();
+        polutionSourceRegions.push_back(retrievePointsFromMapPolyline(path, 3));
     }
 
     intcalc::FEMCalculator femCalculator;
@@ -35,6 +42,7 @@ QVariant CalculationResultComponent::doCalculate() {
         femCalculator.setGamma2(gamma2);
     }
     femCalculator.setConservacyAreas(conservacyAreas);
+    femCalculator.setPolutionSourceRegions(polutionSourceRegions);
     femCalculator.setTriangulationOptions(_triMinAngle, _triMaxArea);
     femCalculator.setMu(_mu);
     femCalculator.setSigma(_sigma);
@@ -45,24 +53,10 @@ QVariant CalculationResultComponent::doCalculate() {
     try {
         intcalc::CalcSolution solution = femCalculator.solve();
 
-        intcalc::Point2DValue minPoint;
-        for (int i = 0; i < solution.vertices.size(); i++) {
-            if (!solution.vertices[i].isOnContour) {
-                minPoint.value = solution.vertices[i].value;
-                break;
-            }
-        }
-        for (const intcalc::Point2DValue& vertex : solution.vertices) {
-            if (vertex.value < minPoint.value && !vertex.isOnContour) {
-                minPoint.value = vertex.value;
-            }
-        }
-        for (const intcalc::Point2DValue& vertex : solution.vertices) {
-            if (minPoint.value == vertex.value && !vertex.isOnContour) {
-                double longitude = vertex.x;
-                double latitude = vertex.y;
-                resCoords.push_back(QGeoCoordinate(latitude, longitude));
-            }
+        for (auto minVertex : solution.minVertices) {
+            double longitude = minVertex.x;
+            double latitude = minVertex.y;
+            resCoords.push_back(QGeoCoordinate(latitude, longitude));
         }
 
         acceptFEMSolution(solution);

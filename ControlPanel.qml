@@ -5,6 +5,8 @@ import QtQuick.Controls 2.14
 // TODO: limit triangulation to certain number of triangles
 Rectangle {
     property bool readyToCalculate;
+    property bool regionSelected;
+    property var subregionSelectionChangedCallback;
     property var onRestart;
     property var onCalculate;
 
@@ -18,6 +20,7 @@ Rectangle {
     property string mu: muTextField.text
     property string sigma: sigmaTextField.text
     property string alpha: alphaTextField.text
+    property var subregionOption: subregionOptionButton.currentOption
 
     color: '#f2f2f2'
 
@@ -171,6 +174,22 @@ Rectangle {
                 Layout.fillWidth: true
                 onClicked: {
                     onRestart();
+                }
+            }
+
+            ToggleButtom {
+                id: subregionOptionButton
+
+                options: [
+                    qsTr("Nature reserve"),
+                    qsTr("Polution source")
+                ]
+                enabled: regionSelected
+                Layout.leftMargin: 6
+                Layout.fillWidth: true
+                onClicked: {
+                    toggle();
+                    subregionSelectionChangedCallback();
                 }
             }
 

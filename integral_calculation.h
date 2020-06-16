@@ -113,7 +113,8 @@ namespace intcalc {
         VertexInfo(double x, double y)
             : Vector2d(x, y),
               _type(NONE),
-              _isInConservacyArea(false) {
+              _isInConservacyArea(false),
+              _isInPolutionSourceRegion(false) {
         }
 
         void setType(Type type) {
@@ -128,6 +129,10 @@ namespace intcalc {
             _isInConservacyArea = isInConservacyArea;
         }
 
+        void setIsInPolutionSourceRegion(bool isInPolutionSourceRegion) {
+            _isInPolutionSourceRegion = isInPolutionSourceRegion;
+        }
+
         Type type() const {
             return _type;
         }
@@ -136,9 +141,14 @@ namespace intcalc {
             return _isInConservacyArea;
         }
 
+        bool isInPolutionSourceRegion() {
+            return _isInPolutionSourceRegion;
+        }
+
     private:
         Type _type;
         bool _isInConservacyArea;
+        bool _isInPolutionSourceRegion;
     };
 
     class Region {
@@ -308,6 +318,12 @@ namespace intcalc {
             }
         }
 
+        void setPolutionSourceRegions(QVector<QVector<Vector2d>*> polutionSourceRegions) {
+            for (auto region : polutionSourceRegions) {
+                _polutionSourceRegions.push_back(Region(region, true));
+            }
+        }
+
         void setMu(double mu) {
             _mu = mu;
         }
@@ -341,6 +357,7 @@ namespace intcalc {
         Region _regionOfStudy;
         Region _gamma2;
         QVector<Region> _conservacyAreas;
+        QVector<Region> _polutionSourceRegions;
 
         double _mu;
         double _alpha;

@@ -19,6 +19,7 @@ ApplicationWindow {
         ControlPanel {
             id: controlPanel
             readyToCalculate: map.dataReadyForCalculation;
+            regionSelected: map.currentPolyline != regionOfStudy && map.currentPolyline != gamma2
 
             SplitView.preferredWidth: 215
             SplitView.minimumWidth: 215
@@ -29,6 +30,9 @@ ApplicationWindow {
             }
             onCalculate: function() {
                 map.triggerCalculation();
+            }
+            subregionSelectionChangedCallback: function() {
+                map.resetSubregion();
             }
         }
 
@@ -41,12 +45,16 @@ ApplicationWindow {
                 id: map
 
                 readonly property var omegaPolylineComponent: Qt.createComponent('Omega.qml')
-                readonly property var polutionSourceMarkerComponent: Qt.createComponent('PolutionSourceMapMarker.qml')
                 readonly property var omegaPolylines: []
+                readonly property var polutionSourceRegionComponent: Qt.createComponent('PolutionSourceRegion.qml')
+                readonly property var polutionSourceRegions: []
+
+                readonly property var polutionSourceMarkerComponent: Qt.createComponent('PolutionSourceMapMarker.qml')
                 readonly property var circles: []
                 readonly property int circlesAmount: 15
+
                 property var currentPolyline: regionOfStudy
-                property bool dataReadyForCalculation: false
+                property bool dataReadyForCalculation: false;
 
                 SplitView.fillHeight: true
 
@@ -100,6 +108,7 @@ ApplicationWindow {
                             regionOfStudy: regionOfStudy
                             gamma2: gamma2
                             conservacyAreas: map.omegaPolylines
+                            polutionSourceRegions: map.polutionSourceRegions
                             triMinAngle: controlPanel.triMinAngle
                             triMaxArea: controlPanel.triMaxArea
                             showTriangulation: controlPanel.showTriangulation
@@ -119,6 +128,10 @@ ApplicationWindow {
                     anchors.fill: parent
 
                     onClicked: {
+                        if (map.currentPolyline === null) {
+                            map.startSubregion();
+                        }
+
                         let coordinate = map.toCoordinate(Qt.point(mouse.x, mouse.y));
                         if (map.currentPolyline === gamma2) {
                             lastMouseClickOutsideROS = false;
@@ -151,9 +164,7 @@ ApplicationWindow {
                         }
 
                         if (map.currentPolyline === gamma2) {
-                            map.currentPolyline = map.omegaPolylineComponent.createObject(map);
-                            map.addMapItem(map.currentPolyline);
-                            map.omegaPolylines.push(map.currentPolyline);
+                            map.currentPolyline = null;
                             return;
                         }
 
@@ -166,21 +177,20 @@ ApplicationWindow {
                         if (map.currentPolyline === regionOfStudy) {
                             map.currentPolyline = gamma2;
                         } else {
-                            map.currentPolyline = map.omegaPolylineComponent.createObject(map);
-                            map.addMapItem(map.currentPolyline);
-                            map.omegaPolylines.push(map.currentPolyline);
-                            map.dataReadyForCalculation = true;
+                            map.finishSubregion();
                         }
                     }
                 }
 
                 function restart() {
                     dataReadyForCalculation = false;
-
                     regionOfStudy.path = [];
                     gamma2.clearFromMap();
                     while (omegaPolylines.length !== 0) {
                         removeMapItem(omegaPolylines.pop());
+                    }
+                    while (polutionSourceRegions.length !== 0) {
+                        removeMapItem(polutionSourceRegions.pop());
                     }
 
                     currentPolyline = regionOfStudy;
@@ -196,6 +206,33 @@ ApplicationWindow {
                     var minPoints = calculationResult.calculate();
                     for (var i = 0; i < Math.min(minPoints.length, circlesAmount); i++) {
                         circles[i].show(minPoints[i]);
+                    }
+                }
+
+                function startSubregion() {
+                    if (controlPanel.subregionOption === 0) {
+                        map.currentPolyline = map.omegaPolylineComponent.createObject(map);
+                        map.addMapItem(map.currentPolyline);
+                    } else {
+                        map.currentPolyline = map.polutionSourceRegionComponent.createObject(map);
+                        map.addMapItem(map.currentPolyline);
+                    }
+                }
+
+                function finishSubregion() {
+                    if (controlPanel.subregionOption === 0) {
+                        map.omegaPolylines.push(map.currentPolyline);
+                        dataReadyForCalculation = true;
+                    } else {
+                        map.polutionSourceRegions.push(map.currentPolyline);
+                    }
+                    map.currentPolyline = null;
+                }
+
+                function resetSubregion() {
+                    if (map.currentPolyline !== null) {
+                        removeMapItem(map.currentPolyline);
+                        map.currentPolyline = null;
                     }
                 }
             }
